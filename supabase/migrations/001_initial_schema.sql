@@ -206,3 +206,15 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER waivers_updated_at  BEFORE UPDATE ON waivers  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ── WAIVER ADDITIONS (esign + text fields) ──────────────────
+ALTER TABLE waivers ADD COLUMN IF NOT EXISTS text_values   JSONB DEFAULT '{}';
+ALTER TABLE waivers ADD COLUMN IF NOT EXISTS esign_name    TEXT;
+ALTER TABLE waivers ADD COLUMN IF NOT EXISTS esign_date    TEXT;
+
+ALTER TABLE pending_waiver_edits ADD COLUMN IF NOT EXISTS text_values  JSONB DEFAULT '{}';
+ALTER TABLE pending_waiver_edits ADD COLUMN IF NOT EXISTS esign_name   TEXT;
+ALTER TABLE pending_waiver_edits ADD COLUMN IF NOT EXISTS esign_date   TEXT;
+
+-- updated_at for bookings
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
