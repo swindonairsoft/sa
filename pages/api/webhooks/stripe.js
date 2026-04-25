@@ -1,21 +1,31 @@
 // pages/api/webhooks/stripe.js
-import { buffer } from 'micro'
 import { constructWebhookEvent } from '../../../lib/stripe'
 import { getAdminClient } from '../../../lib/supabase'
 import { sendBookingConfirmation, sendUkaraConfirmation } from '../../../lib/email'
 import { format } from 'date-fns'
 
+// Tell Next.js not to parse the body — Stripe needs the raw bytes to verify signature
 export const config = { api: { bodyParser: false } }
+
+// Read raw body from the request stream
+async function getRawBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    req.on('data', chunk => chunks.push(chunk))
+    req.on('end', () => resolve(Buffer.concat(chunks)))
+    req.on('error', reject)
+  })
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
   const sig = req.headers['stripe-signature']
-  const buf = await buffer(req)
+  const rawBody = await getRawBody(req)
 
   let event
   try {
-    event = constructWebhookEvent(buf, sig)
+    event = constructWebhookEvent(rawBody, sig)
   } catch (err) {
     console.error('Webhook signature failed:', err.message)
     return res.status(400).send(`Webhook Error: ${err.message}`)
@@ -28,7 +38,6 @@ export default async function handler(req, res) {
     const { booking_id, application_id, type } = session.metadata || {}
 
     if (type === 'booking' && booking_id) {
-      // Confirm booking
       const { data: booking } = await supabase
         .from('bookings')
         .update({
@@ -41,14 +50,13 @@ export default async function handler(req, res) {
         .single()
 
       if (booking) {
-        // Log game day attendance
+        // Log game day attendance automatically on confirmed booking
         await supabase.from('game_day_log').insert({
           user_id: booking.user_id,
           event_id: booking.event_id,
           attended_date: booking.events.event_date,
         })
 
-        // Send confirmation email
         try {
           await sendBookingConfirmation({
             to: booking.profiles.email,
@@ -69,7 +77,6 @@ export default async function handler(req, res) {
     }
 
     if (type === 'ukara' && application_id) {
-      // Mark UKARA as pending review (admin still needs to approve + assign number)
       const { data: application } = await supabase
         .from('ukara_applications')
         .update({
