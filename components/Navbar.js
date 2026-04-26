@@ -19,7 +19,8 @@ const CrosshairIcon = () => (
 export default function Navbar({ session }) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
+  const [scrolled,  setScrolled]  = useState(false)
+  const [isAdmin,   setIsAdmin]   = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
@@ -27,79 +28,104 @@ export default function Navbar({ session }) {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Check admin status whenever session changes
+  useEffect(() => {
+    if (!session) { setIsAdmin(false); return }
+    fetch('/api/admin/verify')
+      .then(r => r.json())
+      .then(d => setIsAdmin(d.isAdmin || false))
+      .catch(() => setIsAdmin(false))
+  }, [session])
+
   const handleSignOut = async () => {
     await supabase.auth.signOut()
+    setMenuOpen(false)
     router.push('/')
   }
 
   const navLinks = [
-    { href: '/events', label: 'Events' },
-    { href: '/pricing', label: 'Pricing' },
-    { href: '/gallery', label: 'Gallery' },
-    { href: '/rules', label: 'Rules & Safety' },
-    { href: '/contact', label: 'Contact' },
+    { href: '/events',  label: 'Events'       },
+    { href: '/pricing', label: 'Pricing'      },
+    { href: '/gallery', label: 'Gallery'      },
+    { href: '/rules',   label: 'Rules & Safety' },
+    { href: '/contact', label: 'Contact'      },
   ]
 
+  const activeLink = { color: '#6aaa48' }
+  const normalLink = { color: '#6a7a64' }
+
   return (
-    <nav
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-      style={{
-        background: scrolled ? 'rgba(8,12,7,0.97)' : '#080c07',
-        borderBottom: `0.5px solid ${scrolled ? '#1e2a1a' : 'transparent'}`,
-        backdropFilter: scrolled ? 'blur(10px)' : 'none',
-      }}
-    >
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+    <nav style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+      background: scrolled ? 'rgba(8,12,7,0.97)' : '#080c07',
+      borderBottom: scrolled ? '0.5px solid #1e2a1a' : '0.5px solid transparent',
+      backdropFilter: scrolled ? 'blur(10px)' : 'none',
+      transition: 'all 0.3s',
+    }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 no-underline">
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
           <CrosshairIcon />
           <div>
-            <div style={{ color: '#e0e8d8', fontFamily: '"Bebas Neue", sans-serif', fontSize: '16px', letterSpacing: '2px' }}>
-              SWINDON AIRSOFT
-            </div>
-            <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '9px', color: '#4a5e42', letterSpacing: '2px' }}>
-              TACTICAL COMBAT EXPERIENCE
-            </div>
+            <div style={{ color: '#e0e8d8', fontFamily: '"Bebas Neue", sans-serif', fontSize: 16, letterSpacing: 2 }}>SWINDON AIRSOFT</div>
+            <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#4a5e42', letterSpacing: 2 }}>TACTICAL COMBAT EXPERIENCE</div>
           </div>
         </Link>
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-6">
+        {/* Desktop nav links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }} className="hidden md:flex">
           {navLinks.map(l => (
-            <Link
-              key={l.href}
-              href={l.href}
-              style={{
-                color: router.pathname.startsWith(l.href) ? '#6aaa48' : '#6a7a64',
-                fontSize: '12px',
-                textDecoration: 'none',
-                letterSpacing: '0.5px',
-                transition: 'color 0.2s',
-                fontWeight: '500',
-              }}
-            >
+            <Link key={l.href} href={l.href} style={{ ...(router.pathname.startsWith(l.href) ? activeLink : normalLink), fontSize: 12, textDecoration: 'none', fontWeight: 500, letterSpacing: 0.5, transition: 'color 0.2s' }}>
               {l.label}
             </Link>
           ))}
         </div>
 
-        {/* Auth buttons */}
-        <div className="hidden md:flex items-center gap-2">
+        {/* Desktop right buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hidden md:flex">
           {session ? (
             <>
-              <Link href="/profile" className="btn-secondary" style={{ padding: '7px 14px', fontSize: '11px', textDecoration: 'none' }}>
+              {/* Admin button — only shown to admins */}
+              {isAdmin && (
+                <Link href="/admin" style={{
+                  fontSize: 11, padding: '7px 14px', borderRadius: 4,
+                  background: 'rgba(200,160,48,0.1)', color: '#c8a030',
+                  border: '0.5px solid rgba(200,160,48,0.35)', textDecoration: 'none',
+                  fontWeight: 600, letterSpacing: 0.5,
+                }}>
+                  ⚙ ADMIN
+                </Link>
+              )}
+              <Link href="/profile" style={{
+                fontSize: 11, padding: '7px 14px', borderRadius: 4,
+                background: 'transparent', color: '#8a9a84',
+                border: '0.5px solid #2a3028', textDecoration: 'none',
+              }}>
                 MY PROFILE
               </Link>
-              <Link href="/events" className="btn-primary" style={{ padding: '7px 16px', fontSize: '11px', textDecoration: 'none' }}>
-                BOOK NOW
-              </Link>
+              <button onClick={handleSignOut} style={{
+                fontSize: 11, padding: '7px 14px', borderRadius: 4,
+                background: 'transparent', color: '#6a4040',
+                border: '0.5px solid rgba(192,64,64,0.3)', cursor: 'pointer',
+              }}>
+                LOG OUT
+              </button>
             </>
           ) : (
             <>
-              <Link href="/auth/login" className="btn-secondary" style={{ padding: '7px 14px', fontSize: '11px', textDecoration: 'none' }}>
+              <Link href="/auth/login" style={{
+                fontSize: 11, padding: '7px 14px', borderRadius: 4,
+                background: 'transparent', color: '#8a9a84',
+                border: '0.5px solid #2a3028', textDecoration: 'none',
+              }}>
                 LOG IN
               </Link>
-              <Link href="/auth/register" className="btn-primary" style={{ padding: '7px 16px', fontSize: '11px', textDecoration: 'none' }}>
+              <Link href="/auth/register" style={{
+                fontSize: 11, padding: '7px 16px', borderRadius: 4,
+                background: '#5a8c3a', color: '#fff',
+                border: 'none', textDecoration: 'none', fontWeight: 600,
+              }}>
                 REGISTER
               </Link>
             </>
@@ -107,52 +133,45 @@ export default function Navbar({ session }) {
         </div>
 
         {/* Mobile hamburger */}
-        <button
-          className="md:hidden"
-          onClick={() => setMenuOpen(!menuOpen)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
-          aria-label="Toggle menu"
-        >
-          <div style={{ width: 22, display: 'flex', flexDirection: 'column', gap: 5 }}>
-            {[0, 1, 2].map(i => (
-              <span key={i} style={{
-                display: 'block', height: 1.5, background: '#6aaa48', borderRadius: 1,
-                transition: 'all 0.3s',
-                transform: menuOpen
-                  ? i === 0 ? 'rotate(45deg) translate(4px, 4px)'
-                  : i === 2 ? 'rotate(-45deg) translate(4px, -4px)'
-                  : 'scaleX(0)'
-                  : 'none',
-                opacity: menuOpen && i === 1 ? 0 : 1,
-              }} />
-            ))}
-          </div>
+        <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', flexDirection: 'column', gap: 5, width: 24 }} className="md:hidden">
+          {[0,1,2].map(i => (
+            <span key={i} style={{
+              display: 'block', height: 1.5, background: '#6aaa48', borderRadius: 1, transition: 'all 0.3s',
+              transform: menuOpen ? (i===0 ? 'rotate(45deg) translate(4px,4px)' : i===2 ? 'rotate(-45deg) translate(4px,-4px)' : 'none') : 'none',
+              opacity: menuOpen && i===1 ? 0 : 1,
+            }} />
+          ))}
         </button>
       </div>
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div style={{ background: '#0a0e09', borderTop: '0.5px solid #1e2a1a', padding: '16px' }} className="md:hidden">
+        <div style={{ background: '#0a0e09', borderTop: '0.5px solid #1e2a1a', padding: 16 }}>
           {navLinks.map(l => (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={() => setMenuOpen(false)}
-              style={{ display: 'block', color: '#6a7a64', fontSize: '14px', padding: '10px 0', textDecoration: 'none', borderBottom: '0.5px solid #1e2a1a' }}
-            >
+            <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)} style={{ display: 'block', color: '#6a7a64', fontSize: 14, padding: '11px 0', textDecoration: 'none', borderBottom: '0.5px solid #1e2a1a' }}>
               {l.label}
             </Link>
           ))}
-          <div style={{ marginTop: '16px', display: 'flex', gap: 8 }}>
+
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {session ? (
               <>
-                <Link href="/profile" onClick={() => setMenuOpen(false)} className="btn-secondary" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', fontSize: '12px' }}>MY PROFILE</Link>
-                <button onClick={handleSignOut} className="btn-danger" style={{ flex: 1, fontSize: '12px' }}>SIGN OUT</button>
+                {isAdmin && (
+                  <Link href="/admin" onClick={() => setMenuOpen(false)} style={{ display: 'block', textAlign: 'center', padding: '10px', borderRadius: 4, background: 'rgba(200,160,48,0.1)', color: '#c8a030', border: '0.5px solid rgba(200,160,48,0.3)', textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>
+                    ⚙ ADMIN PANEL
+                  </Link>
+                )}
+                <Link href="/profile" onClick={() => setMenuOpen(false)} style={{ display: 'block', textAlign: 'center', padding: '10px', borderRadius: 4, background: 'transparent', color: '#8a9a84', border: '0.5px solid #2a3028', textDecoration: 'none', fontSize: 12 }}>
+                  MY PROFILE
+                </Link>
+                <button onClick={handleSignOut} style={{ width: '100%', padding: '10px', borderRadius: 4, background: 'rgba(192,64,64,0.08)', color: '#c04040', border: '0.5px solid rgba(192,64,64,0.3)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                  LOG OUT
+                </button>
               </>
             ) : (
               <>
-                <Link href="/auth/login" onClick={() => setMenuOpen(false)} className="btn-secondary" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', fontSize: '12px' }}>LOG IN</Link>
-                <Link href="/auth/register" onClick={() => setMenuOpen(false)} className="btn-primary" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', fontSize: '12px' }}>REGISTER</Link>
+                <Link href="/auth/login" onClick={() => setMenuOpen(false)} style={{ display: 'block', textAlign: 'center', padding: '10px', borderRadius: 4, background: 'transparent', color: '#8a9a84', border: '0.5px solid #2a3028', textDecoration: 'none', fontSize: 12 }}>LOG IN</Link>
+                <Link href="/auth/register" onClick={() => setMenuOpen(false)} style={{ display: 'block', textAlign: 'center', padding: '10px', borderRadius: 4, background: '#5a8c3a', color: '#fff', textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>REGISTER</Link>
               </>
             )}
           </div>

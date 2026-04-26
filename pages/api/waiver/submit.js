@@ -1,36 +1,47 @@
 // pages/api/waiver/submit.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '@/lib/supabase'
-import { sendWaiverApproved } from '@/lib/email'
+import { getSessionFromRequest, getAdminClient } from '@/lib/supabase'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
+
   const session = await getSessionFromRequest(req)
-  const supabase = getAdminClient()
   if (!session) return res.status(401).json({ error: 'Unauthorized' })
+
+  const admin = getAdminClient()
 
   const payload = {
     user_id: session.user.id,
-    sections_agreed: req.body.sections_agreed,
-    text_values: req.body.text_values,
-    date_of_birth: req.body.date_of_birth,
-    is_under18: req.body.is_under18,
-    parent_data: req.body.parent_data,
-    esign_name: req.body.esign_name,
-    esign_date: req.body.esign_date,
-    signed_at: req.body.signed_at,
-    status: 'pending_approval',
-    submitted_at: new Date().toISOString(),
+    sections_agreed: req.body.sections_agreed || {},
+    text_values:     req.body.text_values     || {},
+    date_of_birth:   req.body.date_of_birth   || null,
+    is_under18:      req.body.is_under18      || false,
+    parent_data:     req.body.parent_data     || null,
+    esign_name:      req.body.esign_name      || '',
+    esign_date:      req.body.esign_date      || '',
+    signed_at:       req.body.signed_at       || new Date().toISOString(),
+    status:          'pending_approval',
+    submitted_at:    new Date().toISOString(),
+    updated_at:      new Date().toISOString(),
   }
 
-  // Check if existing waiver
-  const { data: existing } = await supabase.from('waivers').select('id').eq('user_id', session.user.id).maybeSingle()
+  // Check if existing waiver exists
+  const { data: existing } = await admin
+    .from('waivers')
+    .select('id')
+    .eq('user_id', session.user.id)
+    .maybeSingle()
 
   if (existing) {
-    // Insert edit for admin review
-    await supabase.from('pending_waiver_edits').upsert({ ...payload, waiver_id: existing.id, status: 'pending' })
+    // Write edit for admin review
+    const { error } = await admin.from('pending_waiver_edits').upsert({
+      ...payload,
+      waiver_id: existing.id,
+      status: 'pending',
+    }, { onConflict: 'user_id' })
+    if (error) return res.status(500).json({ error: error.message })
   } else {
     // New waiver
-    const { error } = await supabase.from('waivers').insert(payload)
+    const { error } = await admin.from('waivers').insert(payload)
     if (error) return res.status(500).json({ error: error.message })
   }
 
