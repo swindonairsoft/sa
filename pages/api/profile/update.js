@@ -1,5 +1,5 @@
 // pages/api/profile/update.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../lib/supabase'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '@/lib/supabase'
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
   const session = await getSessionFromRequest(req)

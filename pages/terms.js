@@ -1,5 +1,5 @@
 // pages/terms.js
-import Layout from '../components/Layout'
+import Layout from '@/components/Layout'
 export default function TermsPage({ session }) {
   return (
     <Layout session={session} title="Terms & Conditions">

@@ -1,6 +1,6 @@
 // pages/api/auth/register.js
 // Server-side registration — creates auth user AND profile row reliably
-import { getAdminClient } from '../../../lib/supabase'
+import { getAdminClient } from '@/lib/supabase'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()

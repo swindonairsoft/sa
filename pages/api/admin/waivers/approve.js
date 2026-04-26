@@ -1,6 +1,6 @@
 // pages/api/admin/waivers/approve.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../../lib/supabase'
-import { sendWaiverApproved } from '../../../../lib/email'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '@/lib/supabase'
+import { sendWaiverApproved } from '@/lib/email'
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
   const session = await getSessionFromRequest(req)

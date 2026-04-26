@@ -1,7 +1,7 @@
 // pages/events/index.js
-import Layout from '../../components/Layout'
-import EventCard from '../../components/EventCard'
-import { getUpcomingEvents, getEventBookingCount } from '../../lib/events'
+import Layout from '@/components/Layout'
+import EventCard from '@/components/EventCard'
+import { getUpcomingEvents, getEventBookingCount } from '@/lib/events'
 
 export default function EventsPage({ session, events = [] }) {
   return (

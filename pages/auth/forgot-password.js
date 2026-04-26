@@ -1,8 +1,8 @@
 // pages/auth/forgot-password.js
 import { useState } from 'react'
 import Link from 'next/link'
-import Layout from '../../components/Layout'
-import { supabase } from '../../lib/supabase'
+import Layout from '@/components/Layout'
+import { supabase } from '@/lib/supabase'
 
 export default function ForgotPasswordPage({ session }) {
   const [email, setEmail] = useState('')

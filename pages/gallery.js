@@ -1,5 +1,5 @@
 // pages/gallery.js
-import Layout from '../components/Layout'
+import Layout from '@/components/Layout'
 
 // Placeholder gallery items — replace image URLs with real site photos
 const GALLERY = [

@@ -2,8 +2,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
-import Layout from '../../components/Layout'
-import { supabase } from '../../lib/supabase'
+import Layout from '@/components/Layout'
+import { supabase } from '@/lib/supabase'
 
 export default function LoginPage({ session }) {
   const router = useRouter()

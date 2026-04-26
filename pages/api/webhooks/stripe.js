@@ -1,7 +1,7 @@
 // pages/api/webhooks/stripe.js
-import { constructWebhookEvent } from '../../../lib/stripe'
-import { getAdminClient } from '../../../lib/supabase'
-import { sendBookingConfirmation, sendUkaraConfirmation } from '../../../lib/email'
+import { constructWebhookEvent } from '@/lib/stripe'
+import { getAdminClient } from '@/lib/supabase'
+import { sendBookingConfirmation, sendUkaraConfirmation } from '@/lib/email'
 import { format } from 'date-fns'
 
 // Tell Next.js not to parse the body — Stripe needs the raw bytes to verify signature

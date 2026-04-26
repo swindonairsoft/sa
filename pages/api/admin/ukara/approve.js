@@ -1,6 +1,6 @@
 // pages/api/admin/ukara/approve.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../../lib/supabase'
-import { sendUkaraApproved } from '../../../../lib/email'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '@/lib/supabase'
+import { sendUkaraApproved } from '@/lib/email'
 import { format } from 'date-fns'
 
 export default async function handler(req, res) {

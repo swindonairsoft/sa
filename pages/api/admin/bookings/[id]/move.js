@@ -1,6 +1,6 @@
 // pages/api/admin/bookings/[id]/move.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../../../lib/supabase'
-import { sendBookingConfirmation } from '../../../../../lib/email'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '@/lib/supabase'
+import { sendBookingConfirmation } from '@/lib/email'
 import { format } from 'date-fns'
 
 export default async function handler(req, res) {

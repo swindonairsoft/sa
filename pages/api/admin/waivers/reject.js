@@ -1,6 +1,6 @@
 // pages/api/admin/waivers/reject.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../../lib/supabase'
-import { sendWaiverRejected } from '../../../../lib/email'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '@/lib/supabase'
+import { sendWaiverRejected } from '@/lib/email'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()

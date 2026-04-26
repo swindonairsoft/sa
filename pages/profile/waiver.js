@@ -1,7 +1,7 @@
 // pages/profile/waiver.js
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import Layout from '../../components/Layout'
+import Layout from '@/components/Layout'
 import Link from 'next/link'
 
 const WAIVER_SECTIONS = [

@@ -1,5 +1,5 @@
 // pages/api/admin/verify.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../lib/supabase'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '@/lib/supabase'
 export default async function handler(req, res) {
   
   const { data: { session } } = await supabase.auth.getSession()

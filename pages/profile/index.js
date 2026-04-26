@@ -1,7 +1,7 @@
 // pages/profile/index.js
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import Layout from '../../components/Layout'
+import Layout from '@/components/Layout'
 import Link from 'next/link'
 import { format } from 'date-fns'
 

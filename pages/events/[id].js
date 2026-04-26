@@ -1,13 +1,13 @@
 // pages/events/[id].js
 import { useState } from 'react'
 import { useRouter } from 'next/router'
-import Layout from '../../components/Layout'
+import Layout from '@/components/Layout'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { getEventById, getEventBookingCount } from '../../lib/events'
-import { hasValidWaiver } from '../../lib/waivers'
-import { createBooking } from '../../lib/bookings'
-import { getProfile } from '../../lib/players'
+import { getEventById, getEventBookingCount } from '@/lib/events'
+import { hasValidWaiver } from '@/lib/waivers'
+import { createBooking } from '@/lib/bookings'
+import { getProfile } from '@/lib/players'
 
 const PACKAGES = [
   { id: 'walkon',   label: 'Walk-On',       sub: 'Own kit',             priceKey: 'price_walkon' },
@@ -256,14 +256,15 @@ export async function getServerSideProps(ctx) {
       getEventBookingCount(id),
     ])
 
-    // Check waiver if user logged in
+    // Check waiver if user logged in - read token from cookie
     let waiverOk = false
-    const { createServerSupabaseClient } = await import('@supabase/auth-helpers-nextjs')
-    const supabaseServer = createServerSupabaseClient(ctx)
-    const { data: { session } } = await supabaseServer.auth.getSession()
-    if (session) {
-      waiverOk = await hasValidWaiver(session.user.id)
-    }
+    try {
+      const { getSessionFromRequest } = await import('@/lib/supabase')
+      const session = await getSessionFromRequest(ctx.req)
+      if (session?.user?.id) {
+        waiverOk = await hasValidWaiver(session.user.id)
+      }
+    } catch {}
 
     return { props: { event, bookingCount, waiverOk } }
   } catch (err) {

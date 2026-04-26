@@ -1,6 +1,6 @@
 // pages/api/ukara/apply.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../lib/supabase'
-import { createUkaraCheckout } from '../../../lib/stripe'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '@/lib/supabase'
+import { createUkaraCheckout } from '@/lib/stripe'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()

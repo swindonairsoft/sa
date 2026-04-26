@@ -1,6 +1,6 @@
 // pages/api/bookings/create.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../lib/supabase'
-import { createBookingCheckout } from '../../../lib/stripe'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '@/lib/supabase'
+import { createBookingCheckout } from '@/lib/stripe'
 import { format } from 'date-fns'
 
 export default async function handler(req, res) {

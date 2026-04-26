@@ -1,5 +1,5 @@
 // pages/api/admin/waivers/pending.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../../lib/supabase'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '@/lib/supabase'
 export default async function handler(req, res) {
   const session = await getSessionFromRequest(req)
   const supabase = getAdminClient()

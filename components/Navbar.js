@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { supabase } from '../lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 const CrosshairIcon = () => (
   <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
