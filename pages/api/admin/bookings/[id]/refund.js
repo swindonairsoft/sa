@@ -1,5 +1,5 @@
 // pages/api/admin/bookings/[id]/refund.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../lib/supabase'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../../../lib/supabase'
 import { createRefund } from '../../../../../lib/stripe'
 import { sendRefundNotification } from '../../../../../lib/email'
 

@@ -1,5 +1,5 @@
 // pages/api/admin/bookings/[id]/resend-ticket.js
-import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../lib/supabase'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../../../lib/supabase'
 import { resendTicket } from '../../../../../lib/email'
 
 export default async function handler(req, res) {
