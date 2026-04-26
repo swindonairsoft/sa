@@ -1,5 +1,5 @@
 // pages/api/auth/register.js
-// Server-side registration — creates auth user AND profile row reliably
+import { createClient } from '@supabase/supabase-js'
 import { getAdminClient } from '@/lib/supabase'
 
 export default async function handler(req, res) {
@@ -9,44 +9,40 @@ export default async function handler(req, res) {
   if (!email || !password || !fullName) return res.status(400).json({ error: 'All fields required' })
   if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' })
 
+  // Check if user already exists first using admin client
   const admin = getAdminClient()
+  const { data: existingUsers } = await admin.auth.admin.listUsers()
+  const alreadyExists = existingUsers?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase())
+  if (alreadyExists) {
+    return res.status(400).json({ error: 'An account with this email already exists.' })
+  }
 
-  // Create auth user
-  const { data: authData, error: authError } = await admin.auth.admin.createUser({
-    email,
+  // Use a regular client to sign up — this sends the confirmation email correctly
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const client = createClient(supabaseUrl, supabaseAnonKey)
+
+  const { data, error } = await client.auth.signUp({
+    email: email.trim().toLowerCase(),
     password,
-    email_confirm: false, // they still need to confirm email
-    user_metadata: { full_name: fullName },
+    options: {
+      data: { full_name: fullName.trim() },
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+    },
   })
 
-  if (authError) {
-    // Handle duplicate email gracefully
-    if (authError.message.includes('already') || authError.message.includes('duplicate')) {
-      return res.status(400).json({ error: 'An account with this email already exists.' })
-    }
-    return res.status(400).json({ error: authError.message })
+  if (error) return res.status(400).json({ error: error.message })
+
+  // Also manually insert profile as belt-and-braces (trigger should handle it too)
+  if (data?.user?.id) {
+    await admin.from('profiles').upsert({
+      id: data.user.id,
+      email: email.trim().toLowerCase(),
+      full_name: fullName.trim(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' })
   }
 
-  // Create profile row immediately — don't rely on triggers
-  const { error: profileError } = await admin.from('profiles').upsert({
-    id: authData.user.id,
-    email: email.toLowerCase().trim(),
-    full_name: fullName.trim(),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  })
-
-  if (profileError) {
-    console.error('Profile creation error:', profileError)
-    // Don't fail the registration — user can still log in
-  }
-
-  // Send confirmation email via Supabase (uses their built-in email)
-  await admin.auth.admin.generateLink({
-    type: 'signup',
-    email,
-    options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` },
-  })
-
-  res.status(200).json({ ok: true, userId: authData.user.id })
+  res.status(200).json({ ok: true })
 }
