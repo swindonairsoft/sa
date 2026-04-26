@@ -1,9 +1,9 @@
 // pages/api/profile/update.js
-import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs'
+import { getSessionFromRequest, isAdminUser, getAdminClient } from '../../../lib/supabase'
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
-  const supabase = createServerSupabaseClient({ req, res })
-  const { data: { session } } = await supabase.auth.getSession()
+  const session = await getSessionFromRequest(req)
+  const supabase = getAdminClient()
   if (!session) return res.status(401).json({ error: 'Unauthorized' })
   const { full_name, phone, date_of_birth, address_line1, address_line2, city, postcode } = req.body
   const { error } = await supabase.from('pending_profile_edits').upsert({

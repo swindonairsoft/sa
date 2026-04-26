@@ -218,3 +218,32 @@ ALTER TABLE pending_waiver_edits ADD COLUMN IF NOT EXISTS esign_date   TEXT;
 
 -- updated_at for bookings
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
+
+-- ── AUTO-CREATE PROFILE ON SIGNUP (TRIGGER) ──────────────────
+-- Backup trigger: creates profile row whenever a new auth user is created
+-- This ensures profiles always exist even if the API call fails
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, created_at, updated_at)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email      = EXCLUDED.email,
+    full_name  = COALESCE(EXCLUDED.full_name, profiles.full_name),
+    updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Drop if exists first, then recreate
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
