@@ -1,5 +1,6 @@
 // pages/profile/waiver.js
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
@@ -82,7 +83,7 @@ export default function WaiverPage({ session }) {
   useEffect(() => {
     if (!session) { router.push('/auth/login'); return }
     setEsignDate(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }))
-    fetch('/api/waiver/get')
+    apiFetch('/api/waiver/get')
       .then(r => r.json())
       .then(data => {
         if (data.waiver) {
@@ -129,7 +130,7 @@ export default function WaiverPage({ session }) {
     if (!canSubmit) return
     setSubmitting(true); setError('')
     try {
-      const res = await fetch('/api/waiver/submit', {
+      const res = await apiFetch('/api/waiver/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

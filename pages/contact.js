@@ -1,5 +1,6 @@
 // pages/contact.js
 import { useState } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import Layout from '@/components/Layout'
 
 export default function ContactPage({ session }) {
@@ -12,7 +13,7 @@ export default function ContactPage({ session }) {
     e.preventDefault()
     setSending(true); setError('')
     try {
-      const res = await fetch('/api/contact', {
+      const res = await apiFetch('/api/contact', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })

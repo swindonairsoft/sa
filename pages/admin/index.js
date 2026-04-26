@@ -1,5 +1,6 @@
 // pages/admin/index.js
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
@@ -24,7 +25,7 @@ export default function AdminDashboard({ session }) {
       const t = setTimeout(() => router.push('/auth/login?redirect=/admin'), 800)
       return () => clearTimeout(t)
     }
-    fetch('/api/admin/verify')
+    apiFetch('/api/admin/verify')
       .then(r => r.json())
       .then(d => {
         if (d.isAdmin) {
@@ -41,10 +42,10 @@ export default function AdminDashboard({ session }) {
   const loadAll = () => {
     setLoading(true)
     Promise.all([
-      fetch('/api/admin/stats').then(r => r.json()).catch(() => ({})),
-      fetch('/api/admin/bookings').then(r => r.json()).catch(() => ({ bookings: [] })),
-      fetch('/api/admin/events').then(r => r.json()).catch(() => ({ events: [] })),
-      fetch('/api/admin/waivers/pending').then(r => r.json()).catch(() => ({ new: [], edits: [] })),
+      apiFetch('/api/admin/stats').then(r => r.json()).catch(() => ({})),
+      apiFetch('/api/admin/bookings').then(r => r.json()).catch(() => ({ bookings: [] })),
+      apiFetch('/api/admin/events').then(r => r.json()).catch(() => ({ events: [] })),
+      apiFetch('/api/admin/waivers/pending').then(r => r.json()).catch(() => ({ new: [], edits: [] })),
     ]).then(([s, b, e, w]) => {
       setStats(s)
       setBookings(b.bookings || [])
@@ -55,7 +56,7 @@ export default function AdminDashboard({ session }) {
   }
 
   const handleWaiverAction = async (id, isEdit, action) => {
-    await fetch(`/api/admin/waivers/${action}`, {
+    await apiFetch(`/api/admin/waivers/${action}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, isEdit }),
     })
@@ -63,14 +64,14 @@ export default function AdminDashboard({ session }) {
   }
 
   const handleResendTicket = async (bookingId) => {
-    await fetch(`/api/admin/bookings/${bookingId}/resend-ticket`, { method: 'POST' })
+    await apiFetch(`/api/admin/bookings/${bookingId}/resend-ticket`, { method: 'POST' })
     setMsg('Ticket resent.')
   }
 
   const handleRefund = async (bookingId) => {
     if (!confirm('Process full refund for this booking?')) return
     const reason = prompt('Reason for refund (optional):') || ''
-    await fetch(`/api/admin/bookings/${bookingId}/refund`, {
+    await apiFetch(`/api/admin/bookings/${bookingId}/refund`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason }),
     })

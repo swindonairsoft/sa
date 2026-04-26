@@ -1,5 +1,6 @@
 // pages/admin/players.js
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
@@ -18,7 +19,7 @@ export default function AdminPlayersPage({ session }) {
 
   useEffect(() => {
     if (!session) { router.push('/auth/login'); return }
-    fetch('/api/admin/verify').then(r => r.json()).then(d => {
+    apiFetch('/api/admin/verify').then(r => r.json()).then(d => {
       if (!d.isAdmin) { router.push('/'); return }
       setIsAdmin(true)
       loadData()
@@ -27,8 +28,8 @@ export default function AdminPlayersPage({ session }) {
 
   const loadData = () => {
     Promise.all([
-      fetch('/api/admin/players').then(r => r.json()),
-      fetch('/api/admin/events').then(r => r.json()),
+      apiFetch('/api/admin/players').then(r => r.json()),
+      apiFetch('/api/admin/events').then(r => r.json()),
     ]).then(([p, e]) => {
       setPlayers(p.players || [])
       setEvents(e.events || [])
@@ -38,7 +39,7 @@ export default function AdminPlayersPage({ session }) {
 
   const handleLogGameDay = async (userId) => {
     setLogMsg('')
-    const res = await fetch('/api/admin/players/log-gameday', {
+    const res = await apiFetch('/api/admin/players/log-gameday', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, eventId: gameDayForm.eventId || null, date: gameDayForm.date }),
     })

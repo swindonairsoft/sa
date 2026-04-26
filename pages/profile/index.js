@@ -1,5 +1,6 @@
 // pages/profile/index.js
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
@@ -21,11 +22,11 @@ export default function ProfilePage({ session }) {
   useEffect(() => {
     if (!session) { router.push('/auth/login'); return }
     Promise.all([
-      fetch('/api/profile/get').then(r => r.json()),
-      fetch('/api/profile/bookings').then(r => r.json()),
-      fetch('/api/waiver/get').then(r => r.json()),
-      fetch('/api/profile/gamedays').then(r => r.json()),
-      fetch('/api/ukara/status').then(r => r.json()),
+      apiFetch('/api/profile/get').then(r => r.json()),
+      apiFetch('/api/profile/bookings').then(r => r.json()),
+      apiFetch('/api/waiver/get').then(r => r.json()),
+      apiFetch('/api/profile/gamedays').then(r => r.json()),
+      apiFetch('/api/ukara/status').then(r => r.json()),
     ]).then(([p, b, w, g, u]) => {
       setProfile(p.profile); setForm(p.profile || {})
       setBookings(b.bookings || [])
@@ -38,7 +39,7 @@ export default function ProfilePage({ session }) {
 
   const handleSave = async () => {
     setSaving(true); setSaveMsg('')
-    const res = await fetch('/api/profile/update', {
+    const res = await apiFetch('/api/profile/update', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     })

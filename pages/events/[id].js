@@ -1,5 +1,6 @@
 // pages/events/[id].js
 import { useState } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
@@ -49,7 +50,7 @@ export default function EventDetailPage({ session, event, bookingCount = 0, waiv
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/bookings/create', {
+      const res = await apiFetch('/api/bookings/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ eventId: event.id, pkg, players, addons }),

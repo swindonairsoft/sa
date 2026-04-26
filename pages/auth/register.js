@@ -1,5 +1,6 @@
 // pages/auth/register.js
 import { useState } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
@@ -22,7 +23,7 @@ export default function RegisterPage({ session }) {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

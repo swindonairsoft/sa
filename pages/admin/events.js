@@ -1,5 +1,6 @@
 // pages/admin/events.js
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
@@ -22,7 +23,7 @@ export default function AdminEventsPage({ session }) {
 
   useEffect(() => {
     if (!session) { router.push('/auth/login'); return }
-    fetch('/api/admin/verify').then(r => r.json()).then(d => {
+    apiFetch('/api/admin/verify').then(r => r.json()).then(d => {
       if (!d.isAdmin) { router.push('/'); return }
       setIsAdmin(true)
       loadEvents()
@@ -30,7 +31,7 @@ export default function AdminEventsPage({ session }) {
   }, [session])
 
   const loadEvents = () => {
-    fetch('/api/admin/events').then(r => r.json()).then(d => setEvents(d.events || []))
+    apiFetch('/api/admin/events').then(r => r.json()).then(d => setEvents(d.events || []))
   }
 
   const openNew = () => { setForm(BLANK_EVENT); setEditing('new'); setMsg('') }
@@ -52,12 +53,12 @@ export default function AdminEventsPage({ session }) {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this event? This cannot be undone.')) return
-    await fetch(`/api/admin/events/${id}/delete`, { method: 'POST' })
+    await apiFetch(`/api/admin/events/${id}/delete`, { method: 'POST' })
     loadEvents()
   }
 
   const handleToggle = async (id, current) => {
-    await fetch(`/api/admin/events/${id}/update`, {
+    await apiFetch(`/api/admin/events/${id}/update`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_active: !current }),
     })

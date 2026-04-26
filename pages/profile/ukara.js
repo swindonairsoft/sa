@@ -1,5 +1,6 @@
 // pages/profile/ukara.js
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
@@ -16,9 +17,9 @@ export default function UkaraPage({ session }) {
   useEffect(() => {
     if (!session) { router.push('/auth/login'); return }
     Promise.all([
-      fetch('/api/ukara/eligibility').then(r => r.json()),
-      fetch('/api/ukara/status').then(r => r.json()),
-      fetch('/api/profile/get').then(r => r.json()),
+      apiFetch('/api/ukara/eligibility').then(r => r.json()),
+      apiFetch('/api/ukara/status').then(r => r.json()),
+      apiFetch('/api/profile/get').then(r => r.json()),
     ]).then(([e, s, p]) => {
       setEligibility(e)
       setExisting(s.ukara)
@@ -30,7 +31,7 @@ export default function UkaraPage({ session }) {
   const handleApply = async () => {
     setApplying(true); setError('')
     try {
-      const res = await fetch('/api/ukara/apply', { method: 'POST' })
+      const res = await apiFetch('/api/ukara/apply', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Application failed')
       window.location.href = data.checkoutUrl

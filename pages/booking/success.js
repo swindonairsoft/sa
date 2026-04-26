@@ -1,5 +1,6 @@
 // pages/booking/success.js
 import { useEffect, useState } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
@@ -13,7 +14,7 @@ export default function BookingSuccessPage({ session }) {
 
   useEffect(() => {
     if (!ref) return
-    fetch(`/api/bookings/by-ref?ref=${ref}`)
+    apiFetch(`/api/bookings/by-ref?ref=${ref}`)
       .then(r => r.json())
       .then(d => { setBooking(d.booking); setLoading(false) })
   }, [ref])

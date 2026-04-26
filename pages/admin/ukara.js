@@ -1,5 +1,6 @@
 // pages/admin/ukara.js
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
@@ -15,7 +16,7 @@ export default function AdminUkaraPage({ session }) {
 
   useEffect(() => {
     if (!session) { router.push('/auth/login'); return }
-    fetch('/api/admin/verify').then(r => r.json()).then(d => {
+    apiFetch('/api/admin/verify').then(r => r.json()).then(d => {
       if (!d.isAdmin) { router.push('/'); return }
       setIsAdmin(true)
       loadData()
@@ -23,7 +24,7 @@ export default function AdminUkaraPage({ session }) {
   }, [session])
 
   const loadData = () => {
-    fetch('/api/admin/ukara').then(r => r.json()).then(d => {
+    apiFetch('/api/admin/ukara').then(r => r.json()).then(d => {
       setApplications(d.applications || [])
       setLoading(false)
     })
@@ -32,7 +33,7 @@ export default function AdminUkaraPage({ session }) {
   const handleApprove = async (id) => {
     const ukaraNumber = prompt('Enter UKARA number to assign (e.g. SA-2025-0001):')
     if (!ukaraNumber) return
-    const res = await fetch('/api/admin/ukara/approve', {
+    const res = await apiFetch('/api/admin/ukara/approve', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, ukaraNumber }),
     })
@@ -43,7 +44,7 @@ export default function AdminUkaraPage({ session }) {
 
   const handleReject = async (id) => {
     const reason = prompt('Reason for rejection:') || ''
-    const res = await fetch('/api/admin/ukara/reject', {
+    const res = await apiFetch('/api/admin/ukara/reject', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, reason }),
     })

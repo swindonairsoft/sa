@@ -1,5 +1,6 @@
 // pages/admin/bookings/[id].js
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
@@ -18,8 +19,8 @@ export default function EditBooking({ session }) {
   useEffect(() => {
     if (!session || !id) return
     Promise.all([
-      fetch(`/api/admin/bookings/${id}`).then(r => r.json()),
-      fetch('/api/admin/events').then(r => r.json()),
+      apiFetch(`/api/admin/bookings/${id}`).then(r => r.json()),
+      apiFetch('/api/admin/events').then(r => r.json()),
     ]).then(([b, e]) => {
       setBooking(b.booking); setForm({ event_id: b.booking?.event_id, package_type: b.booking?.package_type, player_count: b.booking?.player_count, status: b.booking?.status })
       setEvents(e.events || [])
@@ -29,7 +30,7 @@ export default function EditBooking({ session }) {
 
   const save = async () => {
     setSaving(true); setMsg('')
-    const res = await fetch(`/api/admin/bookings/${id}/update`, {
+    const res = await apiFetch(`/api/admin/bookings/${id}/update`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     })
@@ -44,7 +45,7 @@ export default function EditBooking({ session }) {
     if (newEventId === booking.event_id) return setMsg('Select a different event to move to.')
     if (!confirm('Move this booking to the selected event?')) return
     setSaving(true)
-    const res = await fetch(`/api/admin/bookings/${id}/move`, {
+    const res = await apiFetch(`/api/admin/bookings/${id}/move`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ newEventId }),
     })
@@ -57,7 +58,7 @@ export default function EditBooking({ session }) {
     const reason = prompt('Refund reason:') || ''
     if (!confirm('Process full refund? This will also cancel the booking.')) return
     setSaving(true)
-    const res = await fetch(`/api/admin/bookings/${id}/refund`, {
+    const res = await apiFetch(`/api/admin/bookings/${id}/refund`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason }),
     })
@@ -68,7 +69,7 @@ export default function EditBooking({ session }) {
   }
 
   const handleResendTicket = async () => {
-    await fetch(`/api/admin/bookings/${id}/resend-ticket`, { method: 'POST' })
+    await apiFetch(`/api/admin/bookings/${id}/resend-ticket`, { method: 'POST' })
     setMsg('Ticket resent to player.')
   }
 

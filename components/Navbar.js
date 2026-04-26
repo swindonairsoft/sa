@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '@/lib/supabase'
+import { apiFetch } from '@/lib/apiFetch'
 
 const CrosshairIcon = () => (
   <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
@@ -31,7 +32,7 @@ export default function Navbar({ session }) {
   // Check admin status whenever session changes
   useEffect(() => {
     if (!session) { setIsAdmin(false); return }
-    fetch('/api/admin/verify')
+    apiFetch('/api/admin/verify')
       .then(r => r.json())
       .then(d => setIsAdmin(d.isAdmin || false))
       .catch(() => setIsAdmin(false))
