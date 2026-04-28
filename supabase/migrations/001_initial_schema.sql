@@ -247,3 +247,20 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ── ADDITIONAL WAIVERS (extra players on same account) ────────
+CREATE TABLE IF NOT EXISTS additional_waivers (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  primary_user_id  UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  full_name        TEXT NOT NULL,
+  date_of_birth    DATE NOT NULL,
+  relationship     TEXT DEFAULT 'guest',
+  created_at       TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE additional_waivers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own additional waivers" ON additional_waivers FOR ALL USING (auth.uid() = primary_user_id);
+CREATE POLICY "Admins manage all additional waivers" ON additional_waivers FOR ALL USING (EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid()));
+
+-- ── MAPS COLUMNS ON EVENTS ────────────────────────────────────
+ALTER TABLE events ADD COLUMN IF NOT EXISTS maps_url   TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS maps_embed TEXT;

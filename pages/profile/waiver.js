@@ -159,10 +159,10 @@ export default function WaiverPage({ session }) {
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 40, color: '#6aaa48', letterSpacing: 2, marginBottom: 8 }}>WAIVER SUBMITTED ✓</div>
         <p style={{ color: '#6a7a64', fontSize: 14, marginBottom: 8 }}>
-          Your waiver has been submitted and is pending admin approval.
+          {existing ? 'Your waiver update has been submitted for admin review.' : 'Your waiver has been signed and approved — you can now book events!'}
         </p>
         <p style={{ color: '#4a5e42', fontSize: 12, marginBottom: 24 }}>
-          You will receive an email once approved. {existing ? 'Changes to existing waivers require admin review before taking effect.' : ''}
+          {existing ? 'Changes to existing waivers require admin approval before taking effect. You will receive an email once reviewed.' : 'Head to Events to book your first game day.'}
         </p>
         <Link href="/profile" className="btn-primary" style={{ textDecoration: 'none' }}>BACK TO PROFILE</Link>
       </div>
