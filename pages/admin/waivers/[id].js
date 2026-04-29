@@ -21,11 +21,12 @@ const SECTION_LABELS = {
 export default function AdminWaiverViewPage({ session }) {
   const router = useRouter()
   const { id, type } = router.query
-  const [waiver,    setWaiver]    = useState(null)
-  const [player,    setPlayer]    = useState(null)
-  const [loading,   setLoading]   = useState(true)
-  const [authState, setAuth]      = useState('checking')
-  const [msg,       setMsg]       = useState('')
+  const [waiver,    setWaiver]   = useState(null)
+  const [player,    setPlayer]   = useState(null)
+  const [loading,   setLoading]  = useState(true)
+  const [authState, setAuth]     = useState('checking')
+  const [msg,       setMsg]      = useState('')
+  const [acting,    setActing]   = useState(false)
   const isEdit = type === 'edit'
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function AdminWaiverViewPage({ session }) {
   }, [session, id])
 
   const loadWaiver = async () => {
+    setLoading(true)
     const res = await apiFetch(`/api/admin/waivers/${id}?type=${type || 'new'}`)
     const d = await res.json()
     setWaiver(d.waiver || null)
@@ -47,17 +49,31 @@ export default function AdminWaiverViewPage({ session }) {
   }
 
   const handleAction = async (action) => {
+    if (acting) return
+    setActing(true)
     const reason = action === 'reject' ? (prompt('Reason for rejection (optional):') || '') : ''
+
+    // Use the actual waiver ID from the loaded waiver object
+    const waiverIdToUse = waiver?.id
+    if (!waiverIdToUse) {
+      setMsg('Error: could not determine waiver ID')
+      setActing(false)
+      return
+    }
+
     const res = await apiFetch(`/api/admin/waivers/${action}`, {
       method: 'POST',
-      body: JSON.stringify({ id, isEdit, reason }),
+      body: JSON.stringify({ id: waiverIdToUse, isEdit, reason }),
     })
     const d = await res.json()
+    setActing(false)
+
     if (res.ok) {
-      setMsg(`Waiver ${action}d successfully.`)
-      setTimeout(() => router.push('/admin'), 1500)
+      setMsg(`✓ Waiver ${action}d successfully.`)
+      // Reload the waiver to reflect new status
+      loadWaiver()
     } else {
-      setMsg(d.error || 'Error')
+      setMsg(`Error: ${d.error || 'Unknown error'}`)
     }
   }
 
@@ -72,14 +88,24 @@ export default function AdminWaiverViewPage({ session }) {
   return (
     <Layout session={session} title="View Waiver">
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 16px' }}>
-        <Link href="/admin" style={{ fontSize: 11, color: '#4a5e42', textDecoration: 'none', display: 'inline-block', marginBottom: 12 }}>← Admin dashboard</Link>
+
+        <Link href="/admin" style={{ fontSize: 11, color: '#4a5e42', textDecoration: 'none', display: 'inline-block', marginBottom: 12 }}>
+          ← Admin dashboard
+        </Link>
         <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: '#6aaa48', letterSpacing: 2, marginBottom: 4 }}>ADMIN</div>
         <h1 style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 28, color: '#e0e8d8', letterSpacing: 2, marginBottom: 20 }}>
           {isEdit ? 'WAIVER EDIT REVIEW' : 'WAIVER REVIEW'}
         </h1>
 
         {msg && (
-          <div style={{ fontSize: 12, color: msg.includes('Error') ? '#c04040' : '#6aaa48', marginBottom: 16, padding: '10px 14px', background: msg.includes('Error') ? 'rgba(192,64,64,0.08)' : 'rgba(106,170,72,0.08)', border: `0.5px solid ${msg.includes('Error') ? 'rgba(192,64,64,0.2)' : 'rgba(106,170,72,0.2)'}`, borderRadius: 4 }}>
+          <div style={{
+            fontSize: 12,
+            color: msg.startsWith('Error') ? '#c04040' : '#6aaa48',
+            marginBottom: 16, padding: '10px 14px',
+            background: msg.startsWith('Error') ? 'rgba(192,64,64,0.08)' : 'rgba(106,170,72,0.08)',
+            border: `0.5px solid ${msg.startsWith('Error') ? 'rgba(192,64,64,0.2)' : 'rgba(106,170,72,0.2)'}`,
+            borderRadius: 4,
+          }}>
             {msg}
           </div>
         )}
@@ -88,21 +114,35 @@ export default function AdminWaiverViewPage({ session }) {
           <p style={{ color: '#4a5e42', fontSize: 12 }}>Loading waiver…</p>
         ) : !waiver ? (
           <div style={{ background: '#0d1209', border: '0.5px solid #1e2a1a', borderRadius: 6, padding: 32, textAlign: 'center' }}>
-            <p style={{ color: '#c04040', fontSize: 13 }}>Waiver not found.</p>
+            <p style={{ color: '#c04040', fontSize: 13 }}>Waiver not found. It may have already been reviewed.</p>
+            <Link href="/admin" style={{ color: '#6aaa48', textDecoration: 'none', fontSize: 12, marginTop: 12, display: 'inline-block' }}>← Back to admin</Link>
           </div>
         ) : (
           <>
+            {/* Status banner */}
+            <div style={{
+              padding: '10px 16px', borderRadius: 4, marginBottom: 16,
+              background: waiver.status === 'approved' ? 'rgba(106,170,72,0.08)' : waiver.status === 'rejected' ? 'rgba(192,64,64,0.08)' : 'rgba(200,160,48,0.08)',
+              border: `0.5px solid ${waiver.status === 'approved' ? 'rgba(106,170,72,0.25)' : waiver.status === 'rejected' ? 'rgba(192,64,64,0.25)' : 'rgba(200,160,48,0.25)'}`,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', color: waiver.status === 'approved' ? '#6aaa48' : waiver.status === 'rejected' ? '#c04040' : '#c8a030' }}>
+                STATUS: {waiver.status?.toUpperCase().replace(/_/g, ' ')}
+              </span>
+              <span style={{ fontSize: 10, color: '#3a4a34' }}>ID: {waiver.id}</span>
+            </div>
+
             {/* Player info */}
             <div style={{ background: '#0d1209', border: '0.5px solid #1e2a1a', borderRadius: 6, padding: 20, marginBottom: 16 }}>
               <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#3a4a34', letterSpacing: 2, marginBottom: 12 }}>PLAYER DETAILS</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
                 {[
-                  ['Player',     player?.full_name || '—'],
-                  ['Email',      player?.email || '—'],
-                  ['Submitted',  waiver.submitted_at ? format(new Date(waiver.submitted_at), 'd MMM yyyy HH:mm') : '—'],
-                  ['Status',     waiver.status?.toUpperCase().replace(/_/g,' ') || '—'],
-                  ['Under 18',   waiver.is_under18 ? 'YES' : 'No'],
-                  ['DOB',        waiver.date_of_birth ? format(new Date(waiver.date_of_birth), 'd MMM yyyy') : '—'],
+                  ['Player',    player?.full_name || '—'],
+                  ['Email',     player?.email || '—'],
+                  ['Submitted', waiver.submitted_at ? format(new Date(waiver.submitted_at), 'd MMM yyyy HH:mm') : '—'],
+                  ['Under 18',  waiver.is_under18 ? '⚠ YES' : 'No'],
+                  ['DOB',       waiver.date_of_birth ? format(new Date(waiver.date_of_birth), 'd MMM yyyy') : '—'],
+                  ['E-Signed',  waiver.esign_name || '—'],
                 ].map(([label, value]) => (
                   <div key={label}>
                     <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#3a4a34', letterSpacing: 1, marginBottom: 3 }}>{label.toUpperCase()}</div>
@@ -115,17 +155,17 @@ export default function AdminWaiverViewPage({ session }) {
             {/* U18 parent data */}
             {waiver.is_under18 && waiver.parent_data && (
               <div style={{ background: 'rgba(200,160,48,0.06)', border: '0.5px solid rgba(200,160,48,0.3)', borderRadius: 6, padding: 20, marginBottom: 16 }}>
-                <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#c8a030', letterSpacing: 2, marginBottom: 12 }}>⚠ U18 — PARENT / GUARDIAN CONSENT</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#c8a030', letterSpacing: 2, marginBottom: 12 }}>⚠ UNDER 18 — PARENT / GUARDIAN CONSENT</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
                   {[
-                    ['Parent Name',      waiver.parent_data.parentName],
-                    ['Parent Email',     waiver.parent_data.parentEmail],
-                    ['Parent Phone',     waiver.parent_data.parentPhone],
-                    ['Parent Signature', waiver.parent_data.parentSignature],
+                    ['Parent Name',  waiver.parent_data.parentName],
+                    ['Parent Email', waiver.parent_data.parentEmail],
+                    ['Parent Phone', waiver.parent_data.parentPhone],
+                    ['Signature',    waiver.parent_data.parentSignature],
                   ].map(([label, value]) => (
                     <div key={label}>
                       <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#8a6020', letterSpacing: 1, marginBottom: 3 }}>{label.toUpperCase()}</div>
-                      <div style={{ fontSize: 12, color: '#c8a030', fontStyle: label.includes('Signature') ? 'italic' : 'normal' }}>{value || '—'}</div>
+                      <div style={{ fontSize: 12, color: '#c8a030', fontStyle: label === 'Signature' ? 'italic' : 'normal' }}>{value || '—'}</div>
                     </div>
                   ))}
                 </div>
@@ -140,57 +180,52 @@ export default function AdminWaiverViewPage({ session }) {
               </div>
             )}
 
-            {/* Waiver sections */}
+            {/* Sections agreed */}
             <div style={{ background: '#0d1209', border: '0.5px solid #1e2a1a', borderRadius: 6, padding: 20, marginBottom: 16 }}>
-              <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#3a4a34', letterSpacing: 2, marginBottom: 12 }}>SECTIONS AGREED</div>
-              {Object.entries(waiver.sections_agreed || {}).map(([key, val]) => (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '0.5px solid #1a2218' }}>
-                  <span style={{ fontSize: 16, color: val ? '#6aaa48' : '#c04040', flexShrink: 0 }}>{val ? '✓' : '✗'}</span>
-                  <span style={{ fontSize: 12, color: val ? '#8a9a84' : '#5a3a3a' }}>
-                    {SECTION_LABELS[key] || key.replace(/_/g, ' ')}
-                    {key === 'pyro' && waiver.is_under18 && (
-                      <span style={{ fontSize: 9, color: '#c04040', marginLeft: 8, fontFamily: '"JetBrains Mono", monospace' }}>BLOCKED — U18</span>
-                    )}
-                  </span>
-                </div>
-              ))}
+              <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#3a4a34', letterSpacing: 2, marginBottom: 12 }}>WAIVER SECTIONS</div>
+              {Object.keys(SECTION_LABELS).map(key => {
+                const val = waiver.sections_agreed?.[key]
+                const blocked = key === 'pyro' && waiver.is_under18
+                return (
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '0.5px solid #1a2218' }}>
+                    <span style={{ fontSize: 16, color: blocked ? '#5a3a3a' : val ? '#6aaa48' : '#3a3a3a', flexShrink: 0, width: 20 }}>
+                      {blocked ? '🚫' : val ? '✓' : '✗'}
+                    </span>
+                    <span style={{ fontSize: 12, color: blocked ? '#5a3a3a' : val ? '#8a9a84' : '#4a4a4a' }}>
+                      {SECTION_LABELS[key]}
+                      {blocked && <span style={{ fontSize: 9, color: '#c04040', marginLeft: 8, fontFamily: '"JetBrains Mono", monospace' }}>BLOCKED — U18</span>}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
 
-            {/* E-Signature */}
+            {/* E-signature */}
             {waiver.esign_name && (
-              <div style={{ background: 'rgba(106,170,72,0.05)', border: '0.5px solid rgba(106,170,72,0.2)', borderRadius: 6, padding: 20, marginBottom: 16 }}>
-                <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#4a5e42', letterSpacing: 2, marginBottom: 8 }}>ELECTRONIC SIGNATURE</div>
-                <div style={{ fontSize: 15, color: '#6aaa48', fontStyle: 'italic', marginBottom: 4 }}>{waiver.esign_name}</div>
+              <div style={{ background: 'rgba(106,170,72,0.04)', border: '0.5px solid rgba(106,170,72,0.15)', borderRadius: 6, padding: 20, marginBottom: 16 }}>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#3a4a34', letterSpacing: 2, marginBottom: 8 }}>ELECTRONIC SIGNATURE</div>
+                <div style={{ fontSize: 16, color: '#6aaa48', fontStyle: 'italic', marginBottom: 4 }}>{waiver.esign_name}</div>
                 <div style={{ fontSize: 11, color: '#3a4a34' }}>{waiver.esign_date || (waiver.signed_at ? format(new Date(waiver.signed_at), 'd MMMM yyyy') : '—')}</div>
               </div>
             )}
 
-            {/* Action buttons — only show if pending */}
+            {/* Action buttons */}
             {(waiver.status === 'pending_approval' || waiver.status === 'pending') && (
-              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 10 }}>
                 <button
                   onClick={() => handleAction('approve')}
-                  style={{ flex: 1, padding: '12px', background: '#5a8c3a', color: '#fff', border: 'none', borderRadius: 4, fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5 }}
+                  disabled={acting}
+                  style={{ flex: 1, padding: '13px', background: acting ? '#2e4a2e' : '#5a8c3a', color: '#fff', border: 'none', borderRadius: 4, fontSize: 13, fontWeight: 700, cursor: acting ? 'not-allowed' : 'pointer', letterSpacing: 0.5 }}
                 >
-                  ✓ APPROVE WAIVER
+                  {acting ? 'PROCESSING…' : '✓ APPROVE WAIVER'}
                 </button>
                 <button
                   onClick={() => handleAction('reject')}
-                  style={{ padding: '12px 20px', background: 'rgba(192,64,64,0.1)', color: '#c04040', border: '0.5px solid rgba(192,64,64,0.3)', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                  disabled={acting}
+                  style={{ padding: '13px 24px', background: 'rgba(192,64,64,0.1)', color: '#c04040', border: '0.5px solid rgba(192,64,64,0.3)', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                 >
                   REJECT
                 </button>
-              </div>
-            )}
-
-            {waiver.status === 'approved' && (
-              <div style={{ padding: '12px 16px', background: 'rgba(106,170,72,0.08)', border: '0.5px solid rgba(106,170,72,0.2)', borderRadius: 4, fontSize: 12, color: '#6aaa48', textAlign: 'center' }}>
-                ✓ APPROVED {waiver.approved_at ? format(new Date(waiver.approved_at), 'd MMM yyyy HH:mm') : ''}
-              </div>
-            )}
-            {waiver.status === 'rejected' && (
-              <div style={{ padding: '12px 16px', background: 'rgba(192,64,64,0.08)', border: '0.5px solid rgba(192,64,64,0.2)', borderRadius: 4, fontSize: 12, color: '#c04040', textAlign: 'center' }}>
-                ✗ REJECTED {waiver.rejection_reason ? `— ${waiver.rejection_reason}` : ''}
               </div>
             )}
           </>

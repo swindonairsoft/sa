@@ -10,36 +10,75 @@ export default async function handler(req, res) {
   if (!adminOk) return res.status(403).json({ error: 'Forbidden' })
 
   const { id, isEdit } = req.body
+  if (!id) return res.status(400).json({ error: 'Missing id' })
+
   const supabase = getAdminClient()
 
   if (isEdit) {
-    // Get the edit
+    // Fetch the pending edit record
     const { data: edit, error: fetchErr } = await supabase
-      .from('pending_waiver_edits').select('*').eq('id', id).single()
-    if (fetchErr || !edit) return res.status(404).json({ error: 'Edit not found' })
+      .from('pending_waiver_edits')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
 
-    const { user_id, waiver_id, id: _id, submitted_at, status, reviewed_at, ...fields } = edit
+    if (fetchErr) return res.status(500).json({ error: fetchErr.message })
+    if (!edit) return res.status(404).json({ error: 'Edit not found' })
 
-    // Apply fields to live waiver
-    await supabase.from('waivers').update({
-      ...fields, status: 'approved', approved_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-    }).eq('id', waiver_id)
+    // Destructure out non-waiver fields
+    const {
+      id: _editId, user_id, waiver_id, status, submitted_at, reviewed_at,
+      ...waiverFields
+    } = edit
 
-    // Mark edit as approved
-    await supabase.from('pending_waiver_edits').update({
-      status: 'approved', reviewed_at: new Date().toISOString(),
-    }).eq('id', id)
+    // Apply to live waiver
+    const { error: updateErr } = await supabase
+      .from('waivers')
+      .update({
+        ...waiverFields,
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', waiver_id)
+
+    if (updateErr) return res.status(500).json({ error: updateErr.message })
+
+    // Mark the edit as approved
+    await supabase
+      .from('pending_waiver_edits')
+      .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+      .eq('id', id)
+
   } else {
-    // Direct waiver approval
-    const { data: waiver } = await supabase
-      .from('waivers').update({ status: 'approved', approved_at: new Date().toISOString() })
-      .eq('id', id).select('user_id').single()
+    // Direct waiver approval — update by waiver id
+    const { data: waiver, error: updateErr } = await supabase
+      .from('waivers')
+      .update({
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('id, user_id')
+      .maybeSingle()
 
-    // Notify player
-    if (waiver?.user_id) {
-      const { data: profile } = await supabase.from('profiles').select('full_name,email').eq('id', waiver.user_id).single()
-      if (profile) {
-        try { await sendWaiverApproved({ to: profile.email, playerName: profile.full_name }) } catch {}
+    if (updateErr) return res.status(500).json({ error: updateErr.message })
+    if (!waiver) return res.status(404).json({ error: 'Waiver not found' })
+
+    // Send approval email
+    if (waiver.user_id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', waiver.user_id)
+        .maybeSingle()
+      if (profile?.email) {
+        try {
+          await sendWaiverApproved({ to: profile.email, playerName: profile.full_name })
+        } catch (emailErr) {
+          console.error('Email send failed:', emailErr)
+        }
       }
     }
   }
