@@ -1,5 +1,5 @@
 // pages/admin/events.js
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
@@ -199,9 +199,7 @@ export default function AdminEventsPage({ session }) {
 
               {/* Add-ons editor */}
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelStyle}>ADD-ONS (JSON — edit carefully)</label>
-                <textarea rows={4} value={form.addons_config || ''} onChange={e => setForm(p => ({ ...p, addons_config: e.target.value }))} style={{ ...inputStyle, resize: 'vertical', fontFamily: '"JetBrains Mono", monospace', fontSize: 11 }} placeholder='[{"id":"pyro","label":"Pyro Pack","price":1000,"note":"18+ only"},{"id":"ammo","label":"Extra Ammo","price":500,"note":"Walk-on only"}]' />
-                <p style={{ fontSize: 10, color: '#3a4a34', marginTop: 4 }}>Price is in pence (e.g. 1000 = £10). Leave empty to use site defaults.</p>
+                <AddonsEditor value={form.addons_config} onChange={v => setForm(p => ({ ...p, addons_config: v }))} />
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -268,3 +266,105 @@ export default function AdminEventsPage({ session }) {
     </Layout>
   )
 }
+
+
+// ── Addons Editor ─────────────────────────────────────────────
+function AddonsEditor({ value, onChange }) {
+  const parseAddons = (v) => {
+    if (!v) return [
+      { id: 'pyro', label: 'Pyro Pack',      price: 1000, note: '18+ only — UK firework regulations apply' },
+      { id: 'ammo', label: 'Extra Ammo Bag', price: 500,  note: 'Walk-on players only' },
+    ]
+    try { return JSON.parse(v) } catch { return [] }
+  }
+
+  const [addons, setAddons] = React.useState(() => parseAddons(value))
+
+  const update = (newAddons) => {
+    setAddons(newAddons)
+    onChange(JSON.stringify(newAddons))
+  }
+
+  const updateAddon = (idx, field, val) => {
+    const next = addons.map((a, i) =>
+      i === idx ? { ...a, [field]: field === 'price' ? Math.round(parseFloat(val || 0) * 100) : val } : a
+    )
+    update(next)
+  }
+
+  const addNew = () => update([...addons, { id: `addon_${Date.now()}`, label: '', price: 500, note: '' }])
+  const remove = (idx) => update(addons.filter((_, i) => i !== idx))
+
+  const labelStyle = { display: 'block', fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#4a5e42', letterSpacing: 1, marginBottom: 3 }
+  const inputStyle = { width: '100%', background: '#080c07', border: '0.5px solid #1e2a1a', borderRadius: 3, color: '#e0e8d8', fontSize: 12, padding: '7px 9px' }
+
+  return (
+    <div>
+      <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#4a5e42', letterSpacing: 1, marginBottom: 10 }}>
+        ADD-ONS (OPTIONAL EXTRAS PLAYERS CAN ADD AT BOOKING)
+      </div>
+
+      {addons.length === 0 && (
+        <p style={{ fontSize: 11, color: '#3a4a34', marginBottom: 10 }}>No add-ons for this event.</p>
+      )}
+
+      {addons.map((a, idx) => (
+        <div key={idx} style={{ background: '#080c07', border: '0.5px solid #1e2a1a', borderRadius: 4, padding: 12, marginBottom: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8, marginBottom: 8 }}>
+            <div>
+              <label style={labelStyle}>ADDON NAME</label>
+              <input
+                type="text"
+                value={a.label}
+                onChange={e => updateAddon(idx, 'label', e.target.value)}
+                style={inputStyle}
+                placeholder="e.g. Pyro Pack"
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>PRICE (£)</label>
+              <input
+                type="number"
+                step="0.50"
+                min="0"
+                value={(a.price / 100).toFixed(2)}
+                onChange={e => updateAddon(idx, 'price', e.target.value)}
+                style={inputStyle}
+                placeholder="10.00"
+              />
+            </div>
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <label style={labelStyle}>NOTE / RESTRICTION (shown to player)</label>
+            <input
+              type="text"
+              value={a.note || ''}
+              onChange={e => updateAddon(idx, 'note', e.target.value)}
+              style={inputStyle}
+              placeholder="e.g. 18+ only — UK firework regulations apply"
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 10, color: '#3a4a34', fontFamily: '"JetBrains Mono", monospace' }}>
+              Displays as: <strong style={{ color: '#6aaa48' }}>+£{(a.price / 100).toFixed(2)} per player</strong>
+            </span>
+            <button
+              onClick={() => remove(idx)}
+              style={{ fontSize: 10, padding: '3px 10px', borderRadius: 3, background: 'rgba(192,64,64,0.1)', color: '#c04040', border: '0.5px solid rgba(192,64,64,0.25)', cursor: 'pointer' }}
+            >
+              REMOVE
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <button
+        onClick={addNew}
+        style={{ width: '100%', padding: '9px', background: 'transparent', color: '#6aaa48', border: '0.5px solid rgba(106,170,72,0.35)', borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer', letterSpacing: 0.5 }}
+      >
+        + ADD OPTIONAL EXTRA
+      </button>
+    </div>
+  )
+}
+
