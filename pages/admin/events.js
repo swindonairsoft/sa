@@ -10,6 +10,12 @@ const BLANK = {
   title: '', description: '', event_date: '', start_time: '09:00', end_time: '17:00',
   location: 'Swindon Airsoft Site, Swindon, Wiltshire', maps_url: '', maps_embed: '',
   event_type: 'outdoor', capacity: 40, price_walkon: 3500, price_hire: 5500, is_active: true,
+  walkon_includes: 'Full day game access\nSafety brief included\nChrono check on arrival\nParking included',
+  hire_includes: 'RIF (replica firearm) included\nUnlimited BBs all day\nFull face protection\nCombat fatigues\nEverything in Walk-on',
+  addons_config: JSON.stringify([
+    { id: 'pyro', label: 'Pyro Pack', price: 1000, note: '18+ only — UK firework regulations apply' },
+    { id: 'ammo', label: 'Extra Ammo Bag', price: 500, note: 'Walk-on players only' },
+  ]),
 }
 
 export default function AdminEventsPage({ session }) {
@@ -33,7 +39,7 @@ export default function AdminEventsPage({ session }) {
   const loadEvents = () => apiFetch('/api/admin/events').then(r => r.json()).then(d => setEvents(d.events || []))
 
   const openNew  = () => { setForm(BLANK); setEditing('new'); setMsg('') }
-  const openEdit = (e) => { setForm({ ...e, event_date: e.event_date?.split('T')[0] || '', maps_url: e.maps_url || '', maps_embed: e.maps_embed || '' }); setEditing(e); setMsg('') }
+  const openEdit = (e) => { setForm({ ...e, event_date: e.event_date?.split('T')[0] || '', maps_url: e.maps_url || '', maps_embed: e.maps_embed || '', walkon_includes: e.walkon_includes || '', hire_includes: e.hire_includes || '', addons_config: e.addons_config || '' }); setEditing(e); setMsg('') }
 
   const handleSave = async () => {
     setSaving(true); setMsg('')
@@ -60,12 +66,32 @@ export default function AdminEventsPage({ session }) {
   // Auto-generate Google Maps embed URL from a share/search URL
   const handleMapsUrl = (url) => {
     setForm(p => ({ ...p, maps_url: url }))
-    // Extract coords if possible for embed
+    if (!url) { setForm(p => ({ ...p, maps_url: '', maps_embed: '' })); return }
+
+    let embed = null
+
+    // Try @lat,lng format (e.g. google.com/maps/@51.5,-1.7,15z)
     const coordMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
     if (coordMatch) {
-      const embed = `https://maps.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}&z=15&output=embed`
-      setForm(p => ({ ...p, maps_url: url, maps_embed: embed }))
+      embed = `https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1000!2d${coordMatch[2]}!3d${coordMatch[1]}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2suk!4v1`
     }
+
+    // Try ?q= query format
+    const qMatch = url.match(/[?&]q=([^&]+)/)
+    if (!embed && qMatch) {
+      embed = `https://maps.google.com/maps?q=${encodeURIComponent(decodeURIComponent(qMatch[1]))}&output=embed`
+    }
+
+    // Try place format (maps.google.com/maps/place/...)
+    const placeMatch = url.match(/place\/([^/@]+)/)
+    if (!embed && placeMatch) {
+      embed = `https://maps.google.com/maps?q=${encodeURIComponent(decodeURIComponent(placeMatch[1].replace(/\+/g,' ')))}&output=embed`
+    }
+
+    // Fallback: if it's already an embed URL
+    if (!embed && url.includes('embed')) embed = url
+
+    setForm(p => ({ ...p, maps_url: url, maps_embed: embed || '' }))
   }
 
   const inputStyle = { width: '100%', background: '#080c07', border: '0.5px solid #1e2a1a', borderRadius: 4, color: '#e0e8d8', fontSize: 12, padding: '9px 12px' }
@@ -159,6 +185,23 @@ export default function AdminEventsPage({ session }) {
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelStyle}>EVENT DESCRIPTION (OPTIONAL)</label>
                 <textarea rows={3} value={form.description || ''} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Briefing notes, game modes, special rules…" />
+              </div>
+
+              {/* Package includes */}
+              <div>
+                <label style={labelStyle}>WALK-ON PACKAGE INCLUDES (one item per line)</label>
+                <textarea rows={4} value={form.walkon_includes || ''} onChange={e => setForm(p => ({ ...p, walkon_includes: e.target.value }))} style={{ ...inputStyle, resize: 'vertical' }} placeholder={'Full day game access\nSafety brief\nParking included'} />
+              </div>
+              <div>
+                <label style={labelStyle}>HIRE PACKAGE INCLUDES (one item per line)</label>
+                <textarea rows={4} value={form.hire_includes || ''} onChange={e => setForm(p => ({ ...p, hire_includes: e.target.value }))} style={{ ...inputStyle, resize: 'vertical' }} placeholder={'RIF + unlimited BBs\nFull face protection\nCombat fatigues'} />
+              </div>
+
+              {/* Add-ons editor */}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelStyle}>ADD-ONS (JSON — edit carefully)</label>
+                <textarea rows={4} value={form.addons_config || ''} onChange={e => setForm(p => ({ ...p, addons_config: e.target.value }))} style={{ ...inputStyle, resize: 'vertical', fontFamily: '"JetBrains Mono", monospace', fontSize: 11 }} placeholder='[{"id":"pyro","label":"Pyro Pack","price":1000,"note":"18+ only"},{"id":"ammo","label":"Extra Ammo","price":500,"note":"Walk-on only"}]' />
+                <p style={{ fontSize: 10, color: '#3a4a34', marginTop: 4 }}>Price is in pence (e.g. 1000 = £10). Leave empty to use site defaults.</p>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

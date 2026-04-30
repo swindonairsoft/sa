@@ -58,7 +58,7 @@ export default function EventCard({ event, bookingCount = 0 }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
           <div>
             <span style={{ fontSize: 16, fontWeight: 600, color: '#6aaa48' }}>
-              from £{event.price_walkon}
+              from £{((event.price_walkon || 0) / 100).toFixed(0)}
             </span>
           </div>
           <span style={{ fontSize: 10, color: '#3a4a34' }}>

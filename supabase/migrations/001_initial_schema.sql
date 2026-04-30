@@ -264,3 +264,8 @@ CREATE POLICY "Admins manage all additional waivers" ON additional_waivers FOR A
 -- ── MAPS COLUMNS ON EVENTS ────────────────────────────────────
 ALTER TABLE events ADD COLUMN IF NOT EXISTS maps_url   TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS maps_embed TEXT;
+
+-- ── EVENT PACKAGE DETAILS & ADDONS ───────────────────────────
+ALTER TABLE events ADD COLUMN IF NOT EXISTS walkon_includes TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS hire_includes   TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS addons_config   TEXT;
