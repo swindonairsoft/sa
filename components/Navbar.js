@@ -45,11 +45,12 @@ export default function Navbar({ session }) {
   }
 
   const navLinks = [
-    { href: '/events',  label: 'Events'       },
-    { href: '/pricing', label: 'Pricing'      },
-    { href: '/gallery', label: 'Gallery'      },
-    { href: '/rules',   label: 'Rules & Safety' },
-    { href: '/contact', label: 'Contact'      },
+    { href: '/events',  label: 'Events'         },
+    { href: '/shop',    label: 'Shop'            },
+    { href: '/pricing', label: 'Pricing'         },
+    { href: '/gallery', label: 'Gallery'         },
+    { href: '/rules',   label: 'Rules & Safety'  },
+    { href: '/contact', label: 'Contact'         },
   ]
 
   const activeLink = { color: '#6aaa48' }

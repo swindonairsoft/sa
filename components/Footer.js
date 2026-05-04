@@ -22,10 +22,11 @@ export default function Footer() {
           <div>
             <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '9px', color: '#4a5e42', letterSpacing: '2px', marginBottom: '12px' }}>PLAY</div>
             {[
-              { href: '/events', label: 'Events' },
-              { href: '/pricing', label: 'Pricing' },
-              { href: '/gallery', label: 'Gallery' },
-              { href: '/rules', label: 'Rules & Safety' },
+              { href: '/events',  label: 'Events'         },
+              { href: '/shop',    label: 'Shop'            },
+              { href: '/pricing', label: 'Pricing'         },
+              { href: '/gallery', label: 'Gallery'         },
+              { href: '/rules',   label: 'Rules & Safety'  },
             ].map(l => (
               <Link key={l.href} href={l.href} style={{ display: 'block', color: '#3a4a34', fontSize: '12px', marginBottom: '6px', textDecoration: 'none' }}>
                 {l.label}
