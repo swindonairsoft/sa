@@ -113,6 +113,7 @@ export default function AdminDashboard({ session }) {
               { href: '/admin/events',        label: '📅 EVENTS'         },
               { href: '/admin/players',       label: '👥 PLAYERS'        },
               { href: '/admin/ukara',         label: '🎫 UKARA'          },
+              { href: '/admin/shop',          label: '🛒 SHOP'           },
               { href: '/admin/profile-edits', label: '✏ PROFILE EDITS'  },
             ].map(l => (
               <Link key={l.href} href={l.href} style={{ fontSize: 11, padding: '8px 14px', borderRadius: 4, background: 'rgba(106,170,72,0.08)', color: '#8aaa68', border: '0.5px solid rgba(106,170,72,0.25)', textDecoration: 'none', fontWeight: 600 }}>{l.label}</Link>

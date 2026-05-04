@@ -100,5 +100,40 @@ export default async function handler(req, res) {
     }
   }
 
+  // Shop order confirmation
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object
+    const { order_id, type } = session.metadata || {}
+
+    if (type === 'shop_order' && order_id) {
+      const supabase = getAdminClient()
+
+      // Get shipping address from Stripe
+      const shipping = session.shipping_details
+      await supabase.from('shop_orders').update({
+        status: 'paid',
+        stripe_payment_intent: session.payment_intent,
+        stripe_session_id: session.id,
+        shipping_name: shipping?.name || null,
+        shipping_address: shipping?.address || null,
+        updated_at: new Date().toISOString(),
+      }).eq('id', order_id)
+
+      // Reduce stock for each item
+      const { data: order } = await supabase.from('shop_orders').select('items').eq('id', order_id).maybeSingle()
+      if (order?.items) {
+        for (const item of order.items) {
+          if (item.productId) {
+            await supabase.rpc('decrement_stock', { product_id: item.productId, qty: item.qty }).catch(() => {
+              // Fallback manual decrement
+              supabase.from('shop_products').select('stock').eq('id', item.productId).maybeSingle().then(({ data }) => {
+                if (data) supabase.from('shop_products').update({ stock: Math.max(0, (data.stock || 0) - item.qty) }).eq('id', item.productId)
+              })
+            })
+          }
+        }
+      }
+    }
+  }
+
   res.status(200).json({ received: true })
-}

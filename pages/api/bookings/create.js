@@ -31,10 +31,19 @@ export default async function handler(req, res) {
   }
 
   // Calculate price
+  // Early bird discount: 10% off if booked 7+ days before event
+  const eventDate = new Date(event.event_date)
+  const today = new Date()
+  const daysUntilEvent = Math.floor((eventDate - today) / (1000 * 60 * 60 * 24))
+  const earlyBird = daysUntilEvent >= 7
+  const earlyBirdPct = earlyBird ? 0.10 : 0
+
   const unitPrice = pkg === 'hire' ? event.price_hire : event.price_walkon
   const ADDON_PRICES = { pyro: 1000, ammo: 500 }
   const addonTotal = addons.reduce((s, a) => s + (ADDON_PRICES[a] || 0), 0)
-  const totalPence = (unitPrice * players) + (addonTotal * players)
+  const baseTotal = (unitPrice * players) + (addonTotal * players)
+  const discountAmount = earlyBird ? Math.round(baseTotal * earlyBirdPct) : 0
+  const totalPence = baseTotal - discountAmount
 
   // Create pending booking
   const { data: booking, error } = await supabase.from('bookings').insert({
@@ -44,6 +53,8 @@ export default async function handler(req, res) {
     player_count: players,
     addons: addons,
     amount_paid: totalPence,
+    discount_amount: discountAmount,
+    early_bird: earlyBird,
     status: 'pending',
   }).select().single()
   if (error) return res.status(500).json({ error: error.message })

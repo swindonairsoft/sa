@@ -269,3 +269,84 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS maps_embed TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS walkon_includes TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS hire_includes   TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS addons_config   TEXT;
+
+-- ── SHOP ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS shop_categories (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name        TEXT NOT NULL,
+  slug        TEXT NOT NULL UNIQUE,
+  description TEXT,
+  sort_order  INTEGER DEFAULT 0,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS shop_products (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  category_id     UUID REFERENCES shop_categories(id) ON DELETE SET NULL,
+  name            TEXT NOT NULL,
+  slug            TEXT NOT NULL UNIQUE,
+  description     TEXT,
+  price           INTEGER NOT NULL, -- pence
+  compare_price   INTEGER,          -- original price for sale display
+  stock           INTEGER NOT NULL DEFAULT 0,
+  images          JSONB DEFAULT '[]',
+  variants        JSONB DEFAULT '[]', -- [{name:'Size',options:['S','M','L']}]
+  is_active       BOOLEAN DEFAULT TRUE,
+  requires_ukara  BOOLEAN DEFAULT FALSE, -- RIFs require UKARA
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS shop_orders (
+  id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_ref             TEXT NOT NULL UNIQUE DEFAULT UPPER(SUBSTRING(MD5(RANDOM()::TEXT),1,10)),
+  user_id               UUID NOT NULL REFERENCES profiles(id),
+  items                 JSONB NOT NULL DEFAULT '[]',
+  subtotal              INTEGER NOT NULL DEFAULT 0, -- pence
+  shipping_cost         INTEGER NOT NULL DEFAULT 0,
+  discount_amount       INTEGER NOT NULL DEFAULT 0,
+  total                 INTEGER NOT NULL DEFAULT 0,
+  shipping_name         TEXT,
+  shipping_address      JSONB,
+  stripe_session_id     TEXT,
+  stripe_payment_intent TEXT,
+  status                TEXT DEFAULT 'pending' CHECK (status IN ('pending','paid','processing','shipped','delivered','cancelled','refunded')),
+  tracking_number       TEXT,
+  tracking_carrier      TEXT,
+  tracking_url          TEXT,
+  tracking_data         JSONB,
+  tracking_updated_at   TIMESTAMPTZ,
+  notes                 TEXT,
+  created_at            TIMESTAMPTZ DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS
+ALTER TABLE shop_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shop_products   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shop_orders     ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Shop categories public read"  ON shop_categories FOR SELECT USING (true);
+CREATE POLICY "Shop products public read"    ON shop_products   FOR SELECT USING (is_active = true);
+CREATE POLICY "Admins manage categories"     ON shop_categories FOR ALL USING (EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid()));
+CREATE POLICY "Admins manage products"       ON shop_products   FOR ALL USING (EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid()));
+CREATE POLICY "Users view own orders"        ON shop_orders     FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users create orders"          ON shop_orders     FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins manage all orders"     ON shop_orders     FOR ALL USING (EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid()));
+
+CREATE INDEX IF NOT EXISTS idx_shop_orders_user    ON shop_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_shop_orders_status  ON shop_orders(status);
+CREATE INDEX IF NOT EXISTS idx_shop_products_cat   ON shop_products(category_id);
+
+-- ── BOOKING EARLY BIRD & DISCOUNT ────────────────────────────
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS discount_amount INTEGER DEFAULT 0;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS early_bird      BOOLEAN DEFAULT FALSE;
+
+-- ── STOCK DECREMENT FUNCTION ──────────────────────────────────
+CREATE OR REPLACE FUNCTION decrement_stock(product_id UUID, qty INTEGER)
+RETURNS void AS $$
+BEGIN
+  UPDATE shop_products 
+  SET stock = GREATEST(0, stock - qty)
+  WHERE id = product_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

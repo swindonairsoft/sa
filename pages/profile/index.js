@@ -13,6 +13,7 @@ export default function ProfilePage({ session }) {
   const [waiver, setWaiver] = useState(null)
   const [gameDays, setGameDays] = useState(0)
   const [ukara, setUkara] = useState(null)
+  const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({})
@@ -27,12 +28,14 @@ export default function ProfilePage({ session }) {
       apiFetch('/api/waiver/get').then(r => r.json()),
       apiFetch('/api/profile/gamedays').then(r => r.json()),
       apiFetch('/api/ukara/status').then(r => r.json()),
-    ]).then(([p, b, w, g, u]) => {
+      apiFetch('/api/shop/orders').then(r => r.json()).catch(() => ({ orders: [] })),
+    ]).then(([p, b, w, g, u, shopOrders]) => {
       setProfile(p.profile); setForm(p.profile || {})
       setBookings(b.bookings || [])
       setWaiver(w.waiver)
       setGameDays(g.count || 0)
       setUkara(u.ukara)
+      setOrders(shopOrders.orders || [])
       setLoading(false)
     })
   }, [session])
@@ -124,6 +127,7 @@ export default function ProfilePage({ session }) {
                       <div style={{ fontSize: 10, color: '#4a5e42', fontFamily: '"JetBrains Mono", monospace', marginTop: 2 }}>
                         {b.events?.event_date ? format(new Date(b.events.event_date), 'EEE d MMM yyyy') : ''}
                         {' · '}{b.player_count} player{b.player_count > 1 ? 's' : ''} · {b.package_type}
+                        {b.early_bird && <span style={{ marginLeft: 6, color: '#6aaa48' }}>⏰ Early bird</span>}
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -134,6 +138,43 @@ export default function ProfilePage({ session }) {
                     </div>
                   </div>
                 ))
+              }
+            </div>
+
+            {/* Shop orders */}
+            <div className="tac-card" style={{ padding: 20 }}>
+              <h2 style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: '#4a5e42', letterSpacing: 2, marginBottom: 14 }}>MY ORDERS</h2>
+              {orders.length === 0
+                ? <p style={{ fontSize: 12, color: '#3a4a34' }}>No orders yet. <Link href="/shop" style={{ color: '#6aaa48' }}>Browse shop →</Link></p>
+                : orders.slice(0, 10).map(o => {
+                  const STATUS_COLORS = { pending:'#c8a030', paid:'#4888c8', processing:'#a078d0', shipped:'#6aaa48', delivered:'#6aaa48', cancelled:'#c04040', refunded:'#4888c8' }
+                  return (
+                    <div key={o.id} style={{ padding: '10px 0', borderBottom: '0.5px solid #1e2a1a' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                            <span style={{ fontSize: 12, color: '#6aaa48', fontFamily: '"JetBrains Mono", monospace', fontWeight: 600 }}>{o.order_ref}</span>
+                            <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 2, background: `${STATUS_COLORS[o.status] || '#6a7a64'}20`, color: STATUS_COLORS[o.status] || '#6a7a64', border: `0.5px solid ${STATUS_COLORS[o.status] || '#6a7a64'}40`, fontFamily: '"JetBrains Mono", monospace' }}>
+                              {o.status?.toUpperCase()}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 10, color: '#4a5e42' }}>
+                            {o.created_at ? format(new Date(o.created_at), 'd MMM yyyy') : ''} · {o.items?.length} item{o.items?.length !== 1 ? 's' : ''}
+                          </div>
+                          {o.tracking_number && (
+                            <div style={{ fontSize: 10, color: '#4a5e42', marginTop: 3 }}>
+                              Tracking: <span style={{ color: '#c0d0b8', fontFamily: '"JetBrains Mono", monospace' }}>{o.tracking_number}</span>
+                              {o.tracking_url && (
+                                <a href={o.tracking_url} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 6, color: '#4888c8', textDecoration: 'none' }}>Track →</a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 14, color: '#6aaa48', fontWeight: 600 }}>£{((o.total || 0) / 100).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )
+                })
               }
             </div>
           </div>
@@ -174,22 +215,35 @@ export default function ProfilePage({ session }) {
             {/* UKARA */}
             <div className="tac-card" style={{ padding: 16 }}>
               <h3 style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#4a5e42', letterSpacing: 2, marginBottom: 10 }}>UKARA</h3>
-              {ukara?.status === 'approved'
-                ? <>
-                    <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 18, color: '#6aaa48', letterSpacing: 2 }}>{ukara.ukara_number}</div>
-                    <div style={{ fontSize: 10, color: '#3a4a34', marginTop: 2 }}>Expires {format(new Date(ukara.expires_at), 'd MMM yyyy')}</div>
-                  </>
-                : <>
-                    <p style={{ fontSize: 11, color: '#3a4a34', marginBottom: 10 }}>
-                      {ukara?.status === 'pending_review' ? 'Application under review.' : 'Apply for UKARA registration — £5/year.'}
-                    </p>
-                    {ukara?.status !== 'pending_review' && (
-                      <Link href="/profile/ukara" className="btn-ghost" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '8px', fontSize: 11 }}>
-                        APPLY FOR UKARA
-                      </Link>
-                    )}
-                  </>
-              }
+              {(profile?.ukara_number || ukara?.status === 'approved') ? (
+                <div style={{ background: 'rgba(106,170,72,0.06)', border: '0.5px solid rgba(106,170,72,0.2)', borderRadius: 4, padding: 12 }}>
+                  <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#4a5e42', letterSpacing: 2, marginBottom: 6 }}>UKARA NUMBER</div>
+                  <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 22, color: '#6aaa48', letterSpacing: 3, marginBottom: 4 }}>
+                    {profile?.ukara_number || ukara?.ukara_number}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#3a4a34' }}>
+                    Expires: {
+                      (profile?.ukara_expires_at || ukara?.expires_at)
+                        ? format(new Date(profile?.ukara_expires_at || ukara?.expires_at), 'd MMM yyyy')
+                        : '—'
+                    }
+                  </div>
+                  <Link href="/profile/ukara" style={{ display: 'block', marginTop: 8, fontSize: 10, color: '#4a5e42', textDecoration: 'none' }}>
+                    View UKARA details →
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <p style={{ fontSize: 11, color: '#3a4a34', marginBottom: 10 }}>
+                    {ukara?.status === 'pending_review' ? '⏳ Application under review.' : 'Apply for UKARA registration — £5/year.'}
+                  </p>
+                  {ukara?.status !== 'pending_review' && (
+                    <Link href="/profile/ukara" className="btn-ghost" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '8px', fontSize: 11 }}>
+                      APPLY FOR UKARA
+                    </Link>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Quick links */}

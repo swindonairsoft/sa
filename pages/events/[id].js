@@ -45,6 +45,11 @@ export default function EventDetailPage({ session, event, bookingCount = 0 }) {
   )
 
   const spotsLeft  = event.capacity - bookingCount
+
+  // Early bird: 10% off if 7+ days before event
+  const daysUntil   = event.event_date ? Math.floor((new Date(event.event_date) - new Date()) / (1000*60*60*24)) : 0
+  const earlyBird   = daysUntil >= 7
+  const earlyBirdPct = 0.10
   const eventDate  = new Date(event.event_date)
   const priceKey   = PACKAGES.find(p => p.id === pkg)?.priceKey
   const unitPrice  = event[priceKey] || 0
@@ -55,8 +60,10 @@ export default function EventDetailPage({ session, event, bookingCount = 0 }) {
     { id: 'ammo', label: 'Extra Ammo Bag', price: 500,  note: 'Walk-on players only' },
   ]
 
-  const addonTotal = addons.reduce((s, id) => s + (eventAddons.find(a => a.id === id)?.price || 0), 0)
-  const totalPence = (unitPrice * players) + (addonTotal * players)
+  const addonTotal   = addons.reduce((s, id) => s + (eventAddons.find(a => a.id === id)?.price || 0), 0)
+  const baseTotal    = (unitPrice * players) + (addonTotal * players)
+  const discountAmt  = earlyBird ? Math.round(baseTotal * earlyBirdPct) : 0
+  const totalPence   = baseTotal - discountAmt
 
   const handleBook = async () => {
     if (!session) return router.push('/auth/login')
@@ -219,6 +226,17 @@ export default function EventDetailPage({ session, event, bookingCount = 0 }) {
                 </div>
               </div>
 
+              {/* Early bird banner */}
+              {earlyBird && (
+                <div style={{ background: 'rgba(106,170,72,0.08)', border: '0.5px solid rgba(106,170,72,0.25)', borderRadius: 4, padding: '8px 12px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>⏰</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#6aaa48' }}>EARLY BIRD — 10% OFF!</div>
+                    <div style={{ fontSize: 10, color: '#4a5e42' }}>Booked {daysUntil} days before event. Discount applied at checkout.</div>
+                  </div>
+                </div>
+              )}
+
               {/* Players */}
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontFamily: '"JetBrains Mono",monospace', fontSize: 9, color: '#4a5e42', letterSpacing: 1, marginBottom: 6 }}>NUMBER OF PLAYERS</label>
@@ -245,13 +263,19 @@ export default function EventDetailPage({ session, event, bookingCount = 0 }) {
               )}
 
               {/* Total */}
-              <div style={{ borderTop: '0.5px solid #1e2a1a', paddingTop: 14, marginBottom: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontFamily: '"JetBrains Mono",monospace', fontSize: 9, color: '#3a4a34', marginBottom: 2 }}>TOTAL ({players} player{players > 1 ? 's' : ''})</div>
-                  <div style={{ fontFamily: '"Bebas Neue",sans-serif', fontSize: 30, color: '#6aaa48', letterSpacing: 1 }}>£{(totalPence / 100).toFixed(2)}</div>
-                </div>
-                <div style={{ textAlign: 'right', fontSize: 10, color: '#2e3e28' }}>
-                  <div>Secure payment</div><div>via Stripe</div>
+              <div style={{ borderTop: '0.5px solid #1e2a1a', paddingTop: 14, marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontFamily: '"JetBrains Mono",monospace', fontSize: 9, color: '#3a4a34', marginBottom: 2 }}>TOTAL ({players} player{players > 1 ? 's' : ''})</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ fontFamily: '"Bebas Neue",sans-serif', fontSize: 30, color: '#6aaa48', letterSpacing: 1 }}>£{(totalPence / 100).toFixed(2)}</div>
+                      {earlyBird && <div style={{ fontSize: 10, color: '#c04040', textDecoration: 'line-through' }}>£{(baseTotal / 100).toFixed(2)}</div>}
+                    </div>
+                    {earlyBird && <div style={{ fontSize: 10, color: '#6aaa48' }}>You save £{(discountAmt / 100).toFixed(2)} with early bird</div>}
+                  </div>
+                  <div style={{ textAlign: 'right', fontSize: 10, color: '#2e3e28' }}>
+                    <div>Secure payment</div><div>via Stripe</div>
+                  </div>
                 </div>
               </div>
 
