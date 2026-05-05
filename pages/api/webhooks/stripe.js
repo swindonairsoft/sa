@@ -4,10 +4,8 @@ import { getAdminClient } from '@/lib/supabase'
 import { sendBookingConfirmation, sendUkaraConfirmation } from '@/lib/email'
 import { format } from 'date-fns'
 
-// Tell Next.js not to parse the body — Stripe needs the raw bytes to verify signature
 export const config = { api: { bodyParser: false } }
 
-// Read raw body from the request stream
 async function getRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
@@ -20,7 +18,7 @@ async function getRawBody(req) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const sig = req.headers['stripe-signature']
+  const sig     = req.headers['stripe-signature']
   const rawBody = await getRawBody(req)
 
   let event
@@ -35,8 +33,9 @@ export default async function handler(req, res) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
-    const { booking_id, application_id, type } = session.metadata || {}
+    const { booking_id, application_id, order_id, type } = session.metadata || {}
 
+    // ── Booking payment ────────────────────────────────────────
     if (type === 'booking' && booking_id) {
       const { data: booking } = await supabase
         .from('bookings')
@@ -50,13 +49,11 @@ export default async function handler(req, res) {
         .single()
 
       if (booking) {
-        // Log game day attendance automatically on confirmed booking
         await supabase.from('game_day_log').insert({
           user_id: booking.user_id,
           event_id: booking.event_id,
           attended_date: booking.events.event_date,
         })
-
         try {
           await sendBookingConfirmation({
             to: booking.profiles.email,
@@ -76,6 +73,7 @@ export default async function handler(req, res) {
       }
     }
 
+    // ── UKARA payment ──────────────────────────────────────────
     if (type === 'ukara' && application_id) {
       const { data: application } = await supabase
         .from('ukara_applications')
@@ -98,17 +96,9 @@ export default async function handler(req, res) {
         } catch {}
       }
     }
-  }
 
-  // Shop order confirmation
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object
-    const { order_id, type } = session.metadata || {}
-
+    // ── Shop order payment ─────────────────────────────────────
     if (type === 'shop_order' && order_id) {
-      const supabase = getAdminClient()
-
-      // Get shipping address from Stripe
       const shipping = session.shipping_details
       await supabase.from('shop_orders').update({
         status: 'paid',
@@ -120,16 +110,18 @@ export default async function handler(req, res) {
       }).eq('id', order_id)
 
       // Reduce stock for each item
-      const { data: order } = await supabase.from('shop_orders').select('items').eq('id', order_id).maybeSingle()
+      const { data: order } = await supabase
+        .from('shop_orders').select('items').eq('id', order_id).maybeSingle()
+
       if (order?.items) {
         for (const item of order.items) {
           if (item.productId) {
-            await supabase.rpc('decrement_stock', { product_id: item.productId, qty: item.qty }).catch(() => {
-              // Fallback manual decrement
-              supabase.from('shop_products').select('stock').eq('id', item.productId).maybeSingle().then(({ data }) => {
-                if (data) supabase.from('shop_products').update({ stock: Math.max(0, (data.stock || 0) - item.qty) }).eq('id', item.productId)
-              })
-            })
+            try {
+              await supabase.rpc('decrement_stock', { product_id: item.productId, qty: item.qty })
+            } catch {
+              const { data: p } = await supabase.from('shop_products').select('stock').eq('id', item.productId).maybeSingle()
+              if (p) await supabase.from('shop_products').update({ stock: Math.max(0, (p.stock || 0) - item.qty) }).eq('id', item.productId)
+            }
           }
         }
       }
@@ -137,3 +129,4 @@ export default async function handler(req, res) {
   }
 
   res.status(200).json({ received: true })
+}
