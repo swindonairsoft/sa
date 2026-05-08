@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
-import Layout from '@/components/Layout'
+import AdminLayout from '@/components/AdminLayout'
 import { apiFetch } from '@/lib/apiFetch'
 import { format } from 'date-fns'
 
@@ -77,29 +77,29 @@ export default function AdminDashboard({ session }) {
   )
 
   if (authState === 'checking') return (
-    <Layout session={session} title="Admin">
+    <AdminLayout session={session} title="Admin">
       <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 11, color: '#4a5e42', letterSpacing: 2 }}>VERIFYING ADMIN ACCESS…</div>
           <div style={{ marginTop: 12, fontSize: 11, color: '#2e3e28' }}>Make sure you are logged in</div>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   )
 
   if (authState === 'denied') return (
-    <Layout session={session} title="Access Denied">
+    <AdminLayout session={session} title="Access Denied">
       <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 32, color: '#c04040', letterSpacing: 2, marginBottom: 8 }}>ACCESS DENIED</div>
           <p style={{ color: '#4a5e42', fontSize: 13 }}>You do not have admin access. Redirecting…</p>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   )
 
   return (
-    <Layout session={session} title="Admin Dashboard">
+    <AdminLayout session={session} title="Admin Dashboard">
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 16px' }}>
 
         {/* Header */}
@@ -108,17 +108,7 @@ export default function AdminDashboard({ session }) {
             <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: '#6aaa48', letterSpacing: 2, marginBottom: 4 }}>🔒 SECURE AREA</div>
             <h1 style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 32, color: '#e0e8d8', letterSpacing: 2 }}>ADMIN DASHBOARD</h1>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {[
-              { href: '/admin/events',        label: '📅 EVENTS'         },
-              { href: '/admin/players',       label: '👥 PLAYERS'        },
-              { href: '/admin/ukara',         label: '🎫 UKARA'          },
-              { href: '/admin/shop',          label: '🛒 SHOP'           },
-              { href: '/admin/profile-edits', label: '✏ PROFILE EDITS'  },
-            ].map(l => (
-              <Link key={l.href} href={l.href} style={{ fontSize: 11, padding: '8px 14px', borderRadius: 4, background: 'rgba(106,170,72,0.08)', color: '#8aaa68', border: '0.5px solid rgba(106,170,72,0.25)', textDecoration: 'none', fontWeight: 600 }}>{l.label}</Link>
-            ))}
-          </div>
+
         </div>
 
         {msg && (
@@ -308,6 +298,6 @@ export default function AdminDashboard({ session }) {
           </div>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   )
 }

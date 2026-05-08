@@ -1,7 +1,7 @@
 // pages/admin/events.js
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import Layout from '@/components/Layout'
+import AdminLayout from '@/components/AdminLayout'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/apiFetch'
 import { format } from 'date-fns'
@@ -97,15 +97,14 @@ export default function AdminEventsPage({ session }) {
   const inputStyle = { width: '100%', background: '#080c07', border: '0.5px solid #1e2a1a', borderRadius: 4, color: '#e0e8d8', fontSize: 12, padding: '9px 12px' }
   const labelStyle = { display: 'block', fontFamily: '"JetBrains Mono", monospace', fontSize: 9, color: '#4a5e42', letterSpacing: 1, marginBottom: 4 }
 
-  if (authState !== 'ok') return <Layout session={session} title="Events"><div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: '#4a5e42', fontFamily: '"JetBrains Mono", monospace', fontSize: 11 }}>LOADING…</p></div></Layout>
+  if (authState !== 'ok') return <AdminLayout session={session} title="Events"><div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: '#4a5e42', fontFamily: '"JetBrains Mono", monospace', fontSize: 11 }}>LOADING…</p></div></AdminLayout>
 
   return (
-    <Layout session={session} title="Manage Events">
+    <AdminLayout session={session} title="Manage Events">
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <Link href="/admin" style={{ fontSize: 11, color: '#4a5e42', textDecoration: 'none', display: 'inline-block', marginBottom: 6 }}>← Admin dashboard</Link>
-            <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: '#6aaa48', letterSpacing: 2, marginBottom: 4 }}>ADMIN</div>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10, color: '#6aaa48', letterSpacing: 2, marginBottom: 4 }}>ADMIN</div>
             <h1 style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 28, color: '#e0e8d8', letterSpacing: 2 }}>MANAGE EVENTS</h1>
           </div>
           <button onClick={openNew} style={{ padding: '10px 18px', background: '#5a8c3a', color: '#fff', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: 0.5 }}>
@@ -263,7 +262,7 @@ export default function AdminEventsPage({ session }) {
           </div>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   )
 }
 

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
-import Layout from '@/components/Layout'
+import AdminLayout from '@/components/AdminLayout'
 import Link from 'next/link'
 import { format } from 'date-fns'
 
@@ -73,10 +73,10 @@ export default function EditBooking({ session }) {
     setMsg('Ticket resent to player.')
   }
 
-  if (loading) return <Layout session={session} title="Edit Booking"><div className="max-w-3xl mx-auto px-4 py-20 text-center"><p style={{ color: '#4a5e42' }}>Loading…</p></div></Layout>
+  if (loading) return <AdminLayout session={session} title="Edit Booking"><div className="max-w-3xl mx-auto px-4 py-20 text-center"><p style={{ color: '#4a5e42' }}>Loading…</p></div></AdminLayout>
 
   return (
-    <Layout session={session} title="Edit Booking">
+    <AdminLayout session={session} title="Edit Booking">
       <div className="max-w-3xl mx-auto px-4 py-12">
         <Link href="/admin" style={{ fontSize: 12, color: '#4a5e42', textDecoration: 'none', display: 'inline-flex', gap: 4, marginBottom: 24 }}>← Back to admin</Link>
         <div className="section-eyebrow">ADMIN</div>
@@ -149,6 +149,6 @@ export default function EditBooking({ session }) {
           <p style={{ fontSize: 10, color: '#3a4a34', marginTop: 10 }}>Resending ticket will email the player their booking confirmation. Refunds are processed via Stripe and the player will be notified.</p>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   )
 }

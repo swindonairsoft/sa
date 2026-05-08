@@ -1,7 +1,7 @@
 // pages/admin/waivers/[id].js
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import Layout from '@/components/Layout'
+import AdminLayout from '@/components/AdminLayout'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/apiFetch'
 import { format } from 'date-fns'
@@ -78,15 +78,15 @@ export default function AdminWaiverViewPage({ session }) {
   }
 
   if (authState !== 'ok') return (
-    <Layout session={session} title="View Waiver">
+    <AdminLayout session={session} title="View Waiver">
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ color: '#4a5e42', fontFamily: '"JetBrains Mono", monospace', fontSize: 11 }}>LOADING…</p>
       </div>
-    </Layout>
+    </AdminLayout>
   )
 
   return (
-    <Layout session={session} title="View Waiver">
+    <AdminLayout session={session} title="View Waiver">
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 16px' }}>
 
         <Link href="/admin" style={{ fontSize: 11, color: '#4a5e42', textDecoration: 'none', display: 'inline-block', marginBottom: 12 }}>
@@ -231,6 +231,6 @@ export default function AdminWaiverViewPage({ session }) {
           </>
         )}
       </div>
-    </Layout>
+    </AdminLayout>
   )
 }

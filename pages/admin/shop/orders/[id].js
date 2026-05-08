@@ -1,7 +1,7 @@
 // pages/admin/shop/orders/[id].js
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import Layout from '@/components/Layout'
+import AdminLayout from '@/components/AdminLayout'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/apiFetch'
 import { format } from 'date-fns'
@@ -74,14 +74,14 @@ export default function AdminOrderPage({ session }) {
   const STATUS_COLORS = { pending:'#c8a030', paid:'#4888c8', processing:'#a078d0', shipped:'#6aaa48', delivered:'#6aaa48', cancelled:'#c04040', refunded:'#4888c8' }
 
   if (authState !== 'ok') return (
-    <Layout session={session} title="Order"><div style={{ minHeight:'60vh',display:'flex',alignItems:'center',justifyContent:'center' }}><p style={{ color:'#4a5e42',fontFamily:'"JetBrains Mono",monospace',fontSize:11 }}>LOADING…</p></div></Layout>
+    <AdminLayout session={session} title="Order"><div style={{ minHeight:'60vh',display:'flex',alignItems:'center',justifyContent:'center' }}><p style={{ color:'#4a5e42',fontFamily:'"JetBrains Mono",monospace',fontSize:11 }}>LOADING…</p></div></AdminLayout>
   )
 
   const inputStyle = { width: '100%', background: '#080c07', border: '0.5px solid #1e2a1a', borderRadius: 4, color: '#e0e8d8', fontSize: 12, padding: '9px 12px' }
   const labelStyle = { display: 'block', fontFamily: '"JetBrains Mono",monospace', fontSize: 9, color: '#4a5e42', letterSpacing: 1, marginBottom: 4 }
 
   return (
-    <Layout session={session} title="Manage Order">
+    <AdminLayout session={session} title="Manage Order">
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 16px' }}>
         <Link href="/admin/shop" style={{ fontSize: 11, color: '#4a5e42', textDecoration: 'none', display: 'inline-block', marginBottom: 12 }}>← Shop management</Link>
         <div style={{ fontFamily: '"JetBrains Mono",monospace', fontSize: 10, color: '#6aaa48', letterSpacing: 2, marginBottom: 4 }}>ADMIN</div>
@@ -242,6 +242,6 @@ export default function AdminOrderPage({ session }) {
           </div>
         )}
       </div>
-    </Layout>
+    </AdminLayout>
   )
 }

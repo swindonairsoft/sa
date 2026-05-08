@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from '@/lib/apiFetch'
 import { useRouter } from 'next/router'
-import Layout from '@/components/Layout'
+import AdminLayout from '@/components/AdminLayout'
 import Link from 'next/link'
 import { format } from 'date-fns'
 
@@ -55,13 +55,12 @@ export default function AdminUkaraPage({ session }) {
 
   const filtered = applications.filter(a => filter === 'all' || a.status === filter)
 
-  if (!isAdmin || loading) return <Layout session={session} title="UKARA Admin"><div className="max-w-4xl mx-auto px-4 py-20 text-center"><p style={{ color: '#4a5e42' }}>Loading…</p></div></Layout>
+  if (!isAdmin || loading) return <AdminLayout session={session} title="UKARA Admin"><div className="max-w-4xl mx-auto px-4 py-20 text-center"><p style={{ color: '#4a5e42' }}>Loading…</p></div></AdminLayout>
 
   return (
-    <Layout session={session} title="UKARA Applications">
+    <AdminLayout session={session} title="UKARA Applications">
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div style={{ marginBottom: 24 }}>
-          <Link href="/admin" style={{ fontSize: 12, color: '#4a5e42', textDecoration: 'none', display: 'inline-block', marginBottom: 8 }}>← Admin dashboard</Link>
           <div className="section-eyebrow">ADMIN</div>
           <h1 className="section-title" style={{ fontSize: 28 }}>UKARA APPLICATIONS</h1>
         </div>
@@ -116,6 +115,6 @@ export default function AdminUkaraPage({ session }) {
           </div>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   )
 }
